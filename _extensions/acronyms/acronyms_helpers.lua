@@ -105,4 +105,38 @@ function Helpers.str_to_boolean(value)
 end
 
 
+-- Helper to parse simple markdown italics (*text* or _text_) to Pandoc inlines
+function Helpers.parse_simple_italics_markdown(text)
+    local inlines = {}
+    local i = 1
+    while i <= #text do
+        local s, e, marker, content = string.find(text, '([*_])([^*_]+)%1', i)
+        if s then
+            if s > i then
+                table.insert(inlines, pandoc.Str(string.sub(text, i, s - 1)))
+            end
+            table.insert(inlines, pandoc.Emph{pandoc.Str(content)})
+            i = e + 1
+        else
+            table.insert(inlines, pandoc.Str(string.sub(text, i)))
+            break
+        end
+    end
+    return inlines
+end
+
+-- Parse limited markdown snippet (currently for italics etc.) using pandoc.read for robustness
+-- Returns list of Inlines
+function Helpers.parse_markdown_snippet(text)
+    local doc = pandoc.read(tostring(text) .. "\n", "markdown")
+    local blocks = doc.blocks
+    local inlines = {}
+    for _, b in ipairs(blocks) do
+        if b.t == "Para" or b.t == "Plain" then
+            for _, il in ipairs(b.c) do table.insert(inlines, il) end
+        end
+    end
+    return inlines
+end
+
 return Helpers
