@@ -140,7 +140,25 @@ function Options:parseOptionsFromMetadata(m)
             self.loa_format = pandoc.utils.stringify(options["loa_format"])
         end
     end
+
+    -- New option: parse_markdown_in_longname
+    if options["parse_markdown_in_longname"] ~= nil then
+        local parsed
+        if type(options["parse_markdown_in_longname"]) == "boolean" then
+            parsed = options["parse_markdown_in_longname"]
+        else
+            local v = pandoc.utils.stringify(options["parse_markdown_in_longname"])
+            v = string.lower(v)
+            parsed = (v == "true" or v == "yes" or v == "y" or v == "1")
+        end
+        self["parse_markdown_in_longname"] = parsed
+    else
+        -- using default value
+    end
 end
 
+
+-- Option: parse_markdown_in_longname (default: false)
+Options["parse_markdown_in_longname"] = false
 
 return Options
