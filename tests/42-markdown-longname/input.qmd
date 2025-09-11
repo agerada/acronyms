@@ -1,0 +1,14 @@
+---
+acronyms:
+  parse_markdown_in_longname: true
+  keys:
+    - shortname: CDI
+      longname: "*Clostridium difficile* infection"
+  style: short-long
+---
+
+# Introduction {#intro}
+
+First mention: \acr{CDI}.
+
+Second mention: \acr{CDI}.
