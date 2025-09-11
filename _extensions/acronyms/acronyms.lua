@@ -6,6 +6,7 @@
 
 
 local Helpers = require("acronyms_helpers")
+local Options = require("acronyms_options")
 
 
 -- Define an Acronym with some default values
@@ -77,7 +78,11 @@ function Acronym:new(object)
         object.plural.shortname = object.shortname .. 's'
     end
     if not object.plural.longname then
-        object.plural.longname = object.longname .. 's'
+        if pandoc.utils.type and pandoc.utils.type(object.longname) == "Inlines" then
+            object.plural.longname = pandoc.utils.stringify(object.longname) .. 's'
+        else
+            object.plural.longname = object.longname .. 's'
+        end
     end
 
     return object
@@ -219,7 +224,15 @@ function Acronyms:parseFromMetadata(metadata, on_duplicate)
         -- By using `and`, we make sure that `stringify` is applied on non-nil.
         local key = v.key and pandoc.utils.stringify(v.key)
         local shortname = v.shortname and pandoc.utils.stringify(v.shortname)
-        local longname = v.longname and pandoc.utils.stringify(v.longname)
+        local longname
+        if v.longname then
+            if Options["parse_markdown_in_longname"] and pandoc.utils.type and pandoc.utils.type(v.longname) == "Inlines" then
+                longname = v.longname  -- preserve formatting (e.g., Emph)
+            else
+                longname = pandoc.utils.stringify(v.longname)
+            end
+        end
+    -- raw longname parsed
         local shortname_plural = v.plural and v.plural.shortname and 
             pandoc.utils.stringify(v.plural.shortname)
         local longname_plural = v.plural and v.plural.longname and
