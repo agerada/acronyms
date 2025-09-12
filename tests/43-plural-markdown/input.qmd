@@ -10,8 +10,9 @@ acronyms:
     - shortname: SAB
       longname: "*Staphylococcus aureus* bacteraemia"
   style: short-long
-  insert_loa: false
 ---
+
+# Introduction {#intro}
 
 Plural explicit first: \acrs{CDI}.
 Plural explicit later: \acrs{CDI}.
