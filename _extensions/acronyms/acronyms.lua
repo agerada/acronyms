@@ -226,8 +226,20 @@ function Acronyms:parseFromMetadata(metadata, on_duplicate)
         local shortname = v.shortname and pandoc.utils.stringify(v.shortname)
         local longname
         if v.longname then
-            if Options["parse_markdown_in_longname"] and pandoc.utils.type and pandoc.utils.type(v.longname) == "Inlines" then
-                longname = v.longname  -- preserve formatting (e.g., Emph)
+            if Options["parse_markdown_in_longname"] then
+                local ptype = pandoc.utils.type and pandoc.utils.type(v.longname)
+                if ptype == "Inlines" or v.longname.t == "MetaInlines" then
+                    -- Convert MetaInlines to raw array of inline elements
+                    if ptype == "Inlines" then
+                        longname = v.longname
+                    else
+                        local arr = {}
+                        for i=1,#v.longname do arr[#arr+1] = v.longname[i] end
+                        longname = arr
+                    end
+                else
+                    longname = pandoc.utils.stringify(v.longname)
+                end
             else
                 longname = pandoc.utils.stringify(v.longname)
             end
@@ -235,8 +247,25 @@ function Acronyms:parseFromMetadata(metadata, on_duplicate)
     -- raw longname parsed
         local shortname_plural = v.plural and v.plural.shortname and 
             pandoc.utils.stringify(v.plural.shortname)
-        local longname_plural = v.plural and v.plural.longname and
-            pandoc.utils.stringify(v.plural.longname)
+        local longname_plural
+        if v.plural and v.plural.longname then
+            if Options["parse_markdown_in_longname"] then
+                local ptype = pandoc.utils.type and pandoc.utils.type(v.plural.longname)
+                if ptype == "Inlines" or v.plural.longname.t == "MetaInlines" then
+                    if ptype == "Inlines" then
+                        longname_plural = v.plural.longname
+                    else
+                        local arr = {}
+                        for i=1,#v.plural.longname do arr[#arr+1] = v.plural.longname[i] end
+                        longname_plural = arr
+                    end
+                else
+                    longname_plural = pandoc.utils.stringify(v.plural.longname)
+                end
+            else
+                longname_plural = pandoc.utils.stringify(v.plural.longname)
+            end
+        end
         local acronym = Acronym:new{
             key = key,
             shortname = shortname,

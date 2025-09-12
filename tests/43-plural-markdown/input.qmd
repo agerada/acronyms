@@ -7,10 +7,13 @@ acronyms:
       plural:
         shortname: CDIs
         longname: "*Clostridium difficile* infections"
+    - shortname: SAB
+      longname: "*Staphylococcus aureus* bacteraemia"
   style: short-long
   insert_loa: false
 ---
 
-Singular first: \acr{CDI}.
+Plural explicit first: \acrs{CDI}.
+Plural explicit later: \acrs{CDI}.
 
-Plural later: \acrs{CDI}.
+Currently, implicit plural is **NOT** supported: \acrs{SAB}.

@@ -177,7 +177,25 @@ function AcronymsPandoc.generateCustomFormat(sorted_acronyms, loa_format)
         -- The `loa_format` should be a Markdown template, with `{shortname}`
         -- and `{longname}` as placeholder values that we must replace.
         local acronym_markup = loa_format:gsub("{shortname}", name)
-        acronym_markup = acronym_markup:gsub("{longname}", acronym.longname)
+        if Options["parse_markdown_in_longname"] and pandoc.utils.type and pandoc.utils.type(acronym.longname) == "Inlines" then
+            -- Serialize inlines back to markdown so template placeholder replacement keeps emphasis
+            local serialized = {}
+            for i=1,#acronym.longname do
+                local inline = acronym.longname[i]
+                if inline.t == "Str" then
+                    table.insert(serialized, inline.text)
+                elseif inline.t == "Space" then
+                    table.insert(serialized, " ")
+                else
+                    -- Fallback to stringify for complex inline (Emph etc.)
+                    table.insert(serialized, pandoc.write(pandoc.Pandoc({ pandoc.Para({ inline }) }), 'markdown'))
+                end
+            end
+            local serialized_str = table.concat(serialized):gsub('\n+$','')
+            acronym_markup = acronym_markup:gsub("{longname}", serialized_str)
+        else
+            acronym_markup = acronym_markup:gsub("{longname}", acronym.longname)
+        end
         quarto.log.debug(
             "[acronyms] Template markup processed as", acronym_markup
         )

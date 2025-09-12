@@ -46,25 +46,34 @@ local styles = {}
 -- Local helper function to create either a Str or a Link,
 -- depending on whether we want to insert links.
 local function ensure_inlines(obj)
-    -- String -> single Str
     if type(obj) == "string" then return { pandoc.Str(obj) } end
-    -- Pandoc Inlines userdata
-    if pandoc and pandoc.utils and pandoc.utils.type and pandoc.utils.type(obj) == "Inlines" then
-        local arr = {}
-        for i = 1, #obj do arr[#arr+1] = obj[i] end
-        return arr
+    if pandoc and pandoc.utils and pandoc.utils.type then
+        local t = pandoc.utils.type(obj)
+        if t == "Inlines" then
+            local arr = {}
+            for i = 1, #obj do arr[#arr+1] = obj[i] end
+            return arr
+        elseif t == "List" then
+            local ok = true
+            for i = 1, #obj do
+                local v = obj[i]
+                if type(v) ~= "table" or v.t == nil then ok = false break end
+            end
+            if ok then
+                local arr = {}
+                for i = 1, #obj do arr[#arr+1] = obj[i] end
+                return arr
+            end
+        end
     end
-    -- Single inline element (table with .t)
     if type(obj) == "table" and obj.t ~= nil then
         return { obj }
     end
-    -- Array of inline elements?
     if type(obj) == "table" then
         local ok = true
         for _, v in ipairs(obj) do if type(v) ~= "table" or v.t == nil then ok = false break end end
         if ok then return obj end
     end
-    -- Fallback: stringify
     return { pandoc.Str(pandoc.utils and pandoc.utils.stringify and pandoc.utils.stringify(obj) or tostring(obj)) }
 end
 

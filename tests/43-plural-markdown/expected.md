@@ -1,3 +1,4 @@
-Singular first: [CDI (*Clostridium difficile* infection)](#acronyms_CDI).
+Plural explicit first: [CDIs (*Clostridium difficile* infections)](#acronyms_CDI).
+Plural explicit later: [CDIs](#acronyms_CDI).
 
-Plural later: [CDIs](#acronyms_CDI).
+Currently, implicit plural is **NOT** supported: [SABs (Staphylococcus aureus bacteraemias)](#acronyms_SAB).
