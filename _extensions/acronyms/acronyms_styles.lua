@@ -56,13 +56,10 @@ end
 
 -- First use: long name (short name)
 -- Next use: short name
-styles["long-short"] = function(acronym, insert_links, is_first_use, capitalize)
+styles["long-short"] = function(acronym, insert_links, is_first_use)
     local text
     if is_first_use then
         text = acronym.longname .. " (" .. acronym.shortname .. ")"
-        if capitalize then
-            text = capitalize_first(text)
-        end
     else
         text = acronym.shortname
     end
@@ -73,13 +70,10 @@ end
 
 -- First use: short name (long name)
 -- Next use: short name
-styles["short-long"] = function(acronym, insert_links, is_first_use, capitalize)
+styles["short-long"] = function(acronym, insert_links, is_first_use)
     local text
     if is_first_use then
         local long_text = acronym.longname
-        if capitalize then
-          long_text = capitalize_first(long_text)
-        end
         text = acronym.shortname .. " (" .. acronym.longname .. ")"
     else
         text = acronym.shortname
@@ -90,14 +84,9 @@ end
 
 -- First use: long name
 -- Next use: long name
-styles["long-long"] = function(acronym, insert_links, capitalize)
+styles["long-long"] = function(acronym, insert_links)
     local text
     text = acronym.longname
-
-    if capitalize then
-      text = capitalize_first(text)
-    end
-
     return create_element(text, acronym.key, insert_links)
 end
 
@@ -129,7 +118,8 @@ end
 
 -- The "public" API of this module, the function which is returned by
 -- require.
-return function(acronym, style_name, insert_links, is_first_use, plural, capitalize)
+return function(acronym, style_name, insert_links, is_first_use, plural, 
+    case_target, case)
     -- Check that the requested strategy exists
     assert(style_name ~= nil,
         "[acronyms] The parameter style_name must not be nil!")
@@ -146,13 +136,36 @@ return function(acronym, style_name, insert_links, is_first_use, plural, capital
     end
 
     -- Transform this acronym prior to rendering
-    -- e.g., for plural form; and later, for sentence or upper case
+    -- e.g., for plural form; and for sentence case
+    acronym = acronym:clone()
     if plural then
-        acronym = acronym:clone()
         acronym.shortname = acronym.plural.shortname
         acronym.longname = acronym.plural.longname
     end
 
+    if case == "upper" then
+        if case_target == "short" or case_target == "both" then
+            acronym.shortname = string.upper(acronym.shortname)
+        end
+        if case_target == "long" or case_target == "both" then
+            acronym.longname = string.upper(acronym.longname)
+        end
+    elseif case == "lower" then
+        if case_target == "short" or case_target == "both" then
+            acronym.shortname = string.lower(acronym.shortname)
+        end
+        if case_target == "long" or case_target == "both" then
+            acronym.longname = string.lower(acronym.longname)
+        end
+    elseif case == "sentence" then
+        if case_target == "short" or case_target == "both" then
+            acronym.shortname = capitalize_first(acronym.shortname)
+        end
+        if case_target == "long" or case_target == "both" then
+            acronym.longname = capitalize_first(acronym.longname)
+        end
+    end
+
     -- Call the style on this acronym
-    return styles[style_name](acronym, insert_links, is_first_use, capitalize)
+    return styles[style_name](acronym, insert_links, is_first_use, case_target)
 end
