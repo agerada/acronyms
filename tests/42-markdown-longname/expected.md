@@ -5,6 +5,6 @@
 
 # Introduction {#intro}
 
-First mention: [CDI](*Clostridium difficile* infection).
+First mention: [CDI (*Clostridium difficile* infection)](#acronyms_CDI).
 
-Second mention: [CDI].
+Second mention: [CDI](#acronyms_CDI).

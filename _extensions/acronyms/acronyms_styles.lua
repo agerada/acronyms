@@ -88,14 +88,18 @@ end
 -- Next use: short name
 styles["long-short"] = function(acronym, insert_links, is_first_use)
     if is_first_use then
-        local longname_elem = create_element(acronym.longname, acronym.key, insert_links, true)
-        local shortname_elem = create_element(acronym.shortname, acronym.key, insert_links, false)
-        local result = {}
-        if type(longname_elem) == "table" then for _, v in ipairs(longname_elem) do table.insert(result, v) end else table.insert(result, longname_elem) end
-        table.insert(result, pandoc.Str(" ("))
-        if type(shortname_elem) == "table" then for _, v in ipairs(shortname_elem) do table.insert(result, v) end else table.insert(result, shortname_elem) end
-        table.insert(result, pandoc.Str(")"))
-        return result
+        local longname_elem = ensure_inlines(acronym.longname)
+        local shortname_elem = ensure_inlines(acronym.shortname)
+        local all = {}
+        for _, v in ipairs(longname_elem) do table.insert(all, v) end
+        table.insert(all, pandoc.Str(" ("))
+        for _, v in ipairs(shortname_elem) do table.insert(all, v) end
+        table.insert(all, pandoc.Str(")"))
+        if insert_links then
+            return { pandoc.Link(all, Helpers.key_to_link(acronym.key)) }
+        else
+            return all
+        end
     else
         local elem = create_element(acronym.shortname, acronym.key, insert_links, false)
         if type(elem) == "table" then return elem else return {elem} end
@@ -107,14 +111,18 @@ end
 -- Next use: short name
 styles["short-long"] = function(acronym, insert_links, is_first_use)
     if is_first_use then
-        local shortname_elem = create_element(acronym.shortname, acronym.key, insert_links, false)
-        local longname_elem = create_element(acronym.longname, acronym.key, insert_links, true)
-        local result = {}
-        if type(shortname_elem) == "table" then for _, v in ipairs(shortname_elem) do table.insert(result, v) end else table.insert(result, shortname_elem) end
-        table.insert(result, pandoc.Str(" ("))
-        if type(longname_elem) == "table" then for _, v in ipairs(longname_elem) do table.insert(result, v) end else table.insert(result, longname_elem) end
-        table.insert(result, pandoc.Str(")"))
-        return result
+        local shortname_elem = ensure_inlines(acronym.shortname)
+        local longname_elem = ensure_inlines(acronym.longname)
+        local all = {}
+        for _, v in ipairs(shortname_elem) do table.insert(all, v) end
+        table.insert(all, pandoc.Str(" ("))
+        for _, v in ipairs(longname_elem) do table.insert(all, v) end
+        table.insert(all, pandoc.Str(")"))
+        if insert_links then
+            return { pandoc.Link(all, Helpers.key_to_link(acronym.key)) }
+        else
+            return all
+        end
     else
         local elem = create_element(acronym.shortname, acronym.key, insert_links, false)
         if type(elem) == "table" then return elem else return {elem} end
@@ -133,13 +141,15 @@ end
 -- Next use: short name
 styles["short-footnote"] = function(acronym, insert_links, is_first_use)
     if is_first_use then
+        -- Main text: plain shortname (no link)
         local text = pandoc.Str(acronym.shortname)
-        local longname_elem = create_element(acronym.longname, acronym.key, insert_links, true)
-        local shortname_elem = create_element(acronym.shortname, acronym.key, insert_links, false)
+        -- Footnote: [shortname](link): longname
+        local shortname_link = create_element(acronym.shortname, acronym.key, insert_links, false)
+        local longname_elem = ensure_inlines(acronym.longname)
         local plain = {}
-        if type(shortname_elem) == "table" then for _, v in ipairs(shortname_elem) do table.insert(plain, v) end else table.insert(plain, shortname_elem) end
+        if type(shortname_link) == "table" then for _, v in ipairs(shortname_link) do table.insert(plain, v) end else table.insert(plain, shortname_link) end
         table.insert(plain, pandoc.Str(": "))
-        if type(longname_elem) == "table" then for _, v in ipairs(longname_elem) do table.insert(plain, v) end else table.insert(plain, longname_elem) end
+        for _, v in ipairs(longname_elem) do table.insert(plain, v) end
         local note = pandoc.Note(pandoc.Plain(plain))
         return { text, note }
     else

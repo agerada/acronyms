@@ -1,3 +1,3 @@
-Singular first: [CDI](*Clostridium difficile* infection).
+Singular first: [CDI (*Clostridium difficile* infection)](#acronyms_CDI).
 
-Plural later: [CDIs].
+Plural later: [CDIs](#acronyms_CDI).
