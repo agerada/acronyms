@@ -195,39 +195,97 @@ return function(acronym, style_name, insert_links, is_first_use, plural,
         acronym.longname = acronym.plural.longname
     end
 
-    local function map_longname(transform)
-        if pandoc.utils.type and pandoc.utils.type(acronym.longname) == "Inlines" then
-            local txt = pandoc.utils.stringify(acronym.longname)
-            return transform(txt)
-        else
-            return transform(acronym.longname)
+    -- Functional case transformation that preserves inline formatting.
+    local function transform_case(value, case_kind)
+        -- String values
+        if type(value) == "string" then
+            if case_kind == "upper" then return value:upper()
+            elseif case_kind == "lower" then return value:lower()
+            elseif case_kind == "sentence" then return capitalize_first(value)
+            else return value end
+        end
+
+        -- Detect a list/array of inline nodes even if it's a plain Lua table
+        local function is_inline_array(tbl)
+            if type(tbl) ~= "table" then return false end
+            -- Quick check: all numeric indices contain tables with a .t tag
+            for i, v in ipairs(tbl) do
+                if type(v) ~= "table" or v.t == nil then return false end
+            end
+            return #tbl > 0
+        end
+
+        if not is_inline_array(value) then
+            -- Maybe it's a Pandoc list-like object
+            if pandoc.utils and pandoc.utils.type then
+                local t = pandoc.utils.type(value)
+                if t == "Inlines" or t == "List" then
+                    -- acceptable – let code continue using value as array
+                else
+                    return value
+                end
+            else
+                return value
+            end
+        end
+
+        local done_first = false
+        local simple_containers = {
+            Emph=true, Strong=true, Span=true, Strikeout=true,
+            SmallCaps=true, Superscript=true, Subscript=true, Underline=true
+        }
+
+        local function transform_inlines(src)
+            local dest = {}
+            for _, il in ipairs(src) do
+                if il.t == "Str" and (il.text or il.c) then
+                    local txt = il.text or il.c
+                    if case_kind == "upper" then
+                        txt = txt:upper()
+                    elseif case_kind == "lower" then
+                        txt = txt:lower()
+                    elseif case_kind == "sentence" and not done_first then
+                        local i = txt:find("%a")
+                        if i then
+                            txt = txt:sub(1,i-1)..txt:sub(i,i):upper()..txt:sub(i+1)
+                            done_first = true
+                        end
+                    end
+                    dest[#dest+1] = pandoc.Str(txt)
+                elseif simple_containers[il.t] and type(il.c) == "table" then
+                    local inner = transform_inlines(il.c)
+                    if il.t == "Span" then
+                        dest[#dest+1] = pandoc.Span(inner, il.attr)
+                    else
+                        local ctor = pandoc[il.t]
+                        if ctor then
+                            dest[#dest+1] = ctor(inner)
+                        else
+                            local copy = {}
+                            for k, v in pairs(il) do copy[k] = v end
+                            copy.c = inner
+                            dest[#dest+1] = copy
+                        end
+                    end
+                else
+                    dest[#dest+1] = il
+                end
+            end
+            return dest
+        end
+
+        return transform_inlines(value)
+    end
+
+    if case == "upper" or case == "lower" or case == "sentence" then
+        if case_target == "short" or case_target == "both" then
+            acronym.shortname = transform_case(acronym.shortname, case)
+        end
+        if case_target == "long" or case_target == "both" then
+            acronym.longname = transform_case(acronym.longname, case)
         end
     end
 
-    if case == "upper" then
-        if case_target == "short" or case_target == "both" then
-            acronym.shortname = string.upper(acronym.shortname)
-        end
-        if case_target == "long" or case_target == "both" then
-            acronym.longname = map_longname(string.upper)
-        end
-    elseif case == "lower" then
-        if case_target == "short" or case_target == "both" then
-            acronym.shortname = string.lower(acronym.shortname)
-        end
-        if case_target == "long" or case_target == "both" then
-            acronym.longname = map_longname(string.lower)
-        end
-    elseif case == "sentence" then
-        if case_target == "short" or case_target == "both" then
-            acronym.shortname = capitalize_first(acronym.shortname)
-        end
-        if case_target == "long" or case_target == "both" then
-            acronym.longname = map_longname(capitalize_first)
-        end
-    end
-
-    -- Call the style on this acronym
     local rendered = styles[style_name](acronym, insert_links, is_first_use, case_target)
     return rendered
 end
