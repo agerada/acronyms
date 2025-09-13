@@ -155,6 +155,19 @@ function Options:parseOptionsFromMetadata(m)
     else
         -- using default value
     end
+
+    -- New option: parse_markdown_in_shortname
+    if options["parse_markdown_in_shortname"] ~= nil then
+        local parsed
+        if type(options["parse_markdown_in_shortname"]) == "boolean" then
+            parsed = options["parse_markdown_in_shortname"]
+        else
+            local v = pandoc.utils.stringify(options["parse_markdown_in_shortname"])
+            v = string.lower(v)
+            parsed = (v == "true" or v == "yes" or v == "y" or v == "1")
+        end
+        self["parse_markdown_in_shortname"] = parsed
+    end
 end
 
 

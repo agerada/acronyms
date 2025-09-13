@@ -173,7 +173,22 @@ function AcronymsPandoc.generateCustomFormat(sorted_acronyms, loa_format)
         )
         local id = Helpers.key_to_id(acronym.key)
         -- The acronym's name. We want it to be rendered with an ID attribute.
-        local name = "[" .. acronym.shortname .. "]{#" .. id .. "}"
+        local function serialize_shortname(acr)
+            if Options["parse_markdown_in_shortname"] and pandoc.utils.type and pandoc.utils.type(acr.shortname) == "Inlines" then
+                local pieces = {}
+                for i=1,#acr.shortname do
+                    local il = acr.shortname[i]
+                    if il.t == "Str" then table.insert(pieces, il.text)
+                    elseif il.t == "Space" then table.insert(pieces, " ")
+                    else
+                        table.insert(pieces, pandoc.write(pandoc.Pandoc({ pandoc.Para({ il }) }), 'markdown'):gsub('\n+$',''))
+                    end
+                end
+                return table.concat(pieces)
+            end
+            return acr.shortname
+        end
+        local name = "[" .. serialize_shortname(acronym) .. "]{#" .. id .. "}"
         -- The `loa_format` should be a Markdown template, with `{shortname}`
         -- and `{longname}` as placeholder values that we must replace.
         local acronym_markup = loa_format:gsub("{shortname}", name)

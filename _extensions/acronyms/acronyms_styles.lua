@@ -97,8 +97,8 @@ end
 -- Next use: short name
 styles["long-short"] = function(acronym, insert_links, is_first_use)
     if is_first_use then
-        local longname_elem = ensure_inlines(acronym.longname)
-        local shortname_elem = ensure_inlines(acronym.shortname)
+    local longname_elem = ensure_inlines(acronym.longname)
+    local shortname_elem = ensure_inlines(acronym.shortname)
         local all = {}
         for _, v in ipairs(longname_elem) do table.insert(all, v) end
         table.insert(all, pandoc.Str(" ("))
@@ -120,7 +120,7 @@ end
 -- Next use: short name
 styles["short-long"] = function(acronym, insert_links, is_first_use)
     if is_first_use then
-        local shortname_elem = ensure_inlines(acronym.shortname)
+    local shortname_elem = ensure_inlines(acronym.shortname)
         local longname_elem = ensure_inlines(acronym.longname)
         local all = {}
         for _, v in ipairs(shortname_elem) do table.insert(all, v) end
