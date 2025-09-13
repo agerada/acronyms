@@ -1,0 +1,16 @@
+---
+acronyms:
+  parse_markdown_in_shortname: true
+  parse_markdown_in_longname: true
+  style: long-short
+  keys:
+    - key: cdi
+      shortname: "*CDI*"
+      longname: Clostridium difficile infection
+---
+
+# Introduction {#intro}
+
+First: \acr{cdi}.
+
+Second: \acr{cdi}.

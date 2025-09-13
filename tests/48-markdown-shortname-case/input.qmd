@@ -1,0 +1,18 @@
+---
+acronyms:
+  parse_markdown_in_shortname: true
+  parse_markdown_in_longname: true
+  style: short-long
+  keys:
+    - key: em
+      shortname: "*em*"
+      longname: emphasized marker
+---
+
+# Introduction {#intro}
+
+First: \acr[case=upper;case_target=short]{em}.
+
+Second: \acr[case=sentence;case_target=short]{em}.
+
+Third: \acr{em}.
