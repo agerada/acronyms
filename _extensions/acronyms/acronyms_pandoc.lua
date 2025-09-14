@@ -134,23 +134,23 @@ function AcronymsPandoc.generateDefinitionList(sorted_acronyms)
     local definition_list = {}
     local Helpers = require("acronyms_helpers")
     for _, acronym in ipairs(sorted_acronyms) do
-        -- The definition's name. A Span with an ID so we can create a link.
         local name = pandoc.Span(
             acronym.shortname,
             pandoc.Attr(Helpers.key_to_id(acronym.key), {}, {})
         )
-        -- Always parse markdown for longname if option is set
-        local longname_val
         local long_inlines
-        if pandoc.utils.type and pandoc.utils.type(acronym.longname) == "Inlines" then
+    if pandoc.utils.type and pandoc.utils.type(acronym.longname) == "Inlines" then
             long_inlines = {}
             for i=1,#acronym.longname do long_inlines[#long_inlines+1] = acronym.longname[i] end
-        elseif Options["parse_markdown_in_longname"] then
+        elseif type(acronym.longname) == "table" and #acronym.longname > 0 and acronym.longname[1].t then
+            long_inlines = {}
+            for i=1,#acronym.longname do long_inlines[#long_inlines+1] = acronym.longname[i] end
+    elseif acronym._parse_markdown_longname then
             long_inlines = Helpers.parse_markdown_snippet(tostring(acronym.longname))
         else
             long_inlines = { pandoc.Str(tostring(acronym.longname)) }
         end
-        longname_val = pandoc.Plain(long_inlines)
+        local longname_val = pandoc.Plain(long_inlines)
         table.insert(definition_list, { name, longname_val })
     end
     return pandoc.DefinitionList(definition_list)
@@ -192,7 +192,7 @@ function AcronymsPandoc.generateCustomFormat(sorted_acronyms, loa_format)
         -- The `loa_format` should be a Markdown template, with `{shortname}`
         -- and `{longname}` as placeholder values that we must replace.
         local acronym_markup = loa_format:gsub("{shortname}", name)
-        if Options["parse_markdown_in_longname"] and pandoc.utils.type and pandoc.utils.type(acronym.longname) == "Inlines" then
+    if acronym._parse_markdown_longname and pandoc.utils.type and pandoc.utils.type(acronym.longname) == "Inlines" then
             -- Serialize inlines back to markdown so template placeholder replacement keeps emphasis
             local serialized = {}
             for i=1,#acronym.longname do

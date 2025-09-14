@@ -141,37 +141,32 @@ function Options:parseOptionsFromMetadata(m)
         end
     end
 
-    -- New option: parse_markdown_in_longname
-    if options["parse_markdown_in_longname"] ~= nil then
-        local parsed
-        if type(options["parse_markdown_in_longname"]) == "boolean" then
-            parsed = options["parse_markdown_in_longname"]
+    -- Unified markdown parsing option: markdown: false|longname|shortname|both
+    if options["markdown"] ~= nil then
+        local raw = pandoc.utils.stringify(options["markdown"]):lower()
+        if raw == "false" or raw == "no" or raw == "0" or raw == "" then
+            self.parse_markdown_in_longname = false
+            self.parse_markdown_in_shortname = false
+        elseif raw == "longname" then
+            self.parse_markdown_in_longname = true
+            self.parse_markdown_in_shortname = false
+        elseif raw == "shortname" then
+            self.parse_markdown_in_longname = false
+            self.parse_markdown_in_shortname = true
+        elseif raw == "both" or raw == "all" then
+            self.parse_markdown_in_longname = true
+            self.parse_markdown_in_shortname = true
         else
-            local v = pandoc.utils.stringify(options["parse_markdown_in_longname"])
-            v = string.lower(v)
-            parsed = (v == "true" or v == "yes" or v == "y" or v == "1")
+            quarto.log.warning("[acronyms] Unrecognized value for 'markdown': "..raw.." (expected false|longname|shortname|both). Treating as false.")
+            self.parse_markdown_in_longname = false
+            self.parse_markdown_in_shortname = false
         end
-        self["parse_markdown_in_longname"] = parsed
-    else
-        -- using default value
-    end
-
-    -- New option: parse_markdown_in_shortname
-    if options["parse_markdown_in_shortname"] ~= nil then
-        local parsed
-        if type(options["parse_markdown_in_shortname"]) == "boolean" then
-            parsed = options["parse_markdown_in_shortname"]
-        else
-            local v = pandoc.utils.stringify(options["parse_markdown_in_shortname"])
-            v = string.lower(v)
-            parsed = (v == "true" or v == "yes" or v == "y" or v == "1")
-        end
-        self["parse_markdown_in_shortname"] = parsed
     end
 end
 
 
--- Option: parse_markdown_in_longname (default: false)
+-- Defaults for markdown parsing flags (derived from unified 'markdown' option)
 Options["parse_markdown_in_longname"] = false
+Options["parse_markdown_in_shortname"] = false
 
 return Options

@@ -118,4 +118,51 @@ function Helpers.parse_markdown_snippet(text)
     return inlines
 end
 
+-- Normalize a value (string or Pandoc Inlines/list) to a plain string.
+-- If v is an Inlines object (or a plain Lua array of inline nodes), we
+-- stringify it using pandoc.utils.stringify; otherwise fallback to tostring.
+function Helpers.inlines_to_string(v)
+    if pandoc and pandoc.utils and pandoc.utils.type then
+        local t = pandoc.utils.type(v)
+        if t == "Inlines" then
+            return pandoc.utils.stringify(v)
+        elseif t == "List" then
+            -- Heuristic: list whose elements are inline nodes (tables w/ .t)
+            local is_inlines = true
+            for _, il in ipairs(v) do
+                if type(il) ~= "table" or il.t == nil then
+                    is_inlines = false; break
+                end
+            end
+            if is_inlines then
+                return pandoc.utils.stringify(pandoc.Inlines(v))
+            end
+        end
+    end
+    return tostring(v)
+end
+
+-- Extract a metadata field (shortname/longname or plural variants) as either
+-- raw Inlines (array) when parse_markdown is true and the field is MetaInlines/Inlines,
+-- or as a plain string otherwise. Returns nil if the input is nil.
+function Helpers.extract_meta_field(field, parse_markdown)
+    if field == nil then return nil end
+    if parse_markdown then
+        local ptype = pandoc.utils.type and pandoc.utils.type(field)
+        if ptype == "Inlines" or (type(field) == "table" and field.t == "MetaInlines") then
+            if ptype == "Inlines" then
+                return field
+            else
+                local arr = {}
+                for i=1,#field do arr[#arr+1] = field[i] end
+                return arr
+            end
+        else
+            return pandoc.utils.stringify(field)
+        end
+    else
+        return pandoc.utils.stringify(field)
+    end
+end
+
 return Helpers

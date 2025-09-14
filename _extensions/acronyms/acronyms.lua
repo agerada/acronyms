@@ -67,7 +67,7 @@ function Acronym:new(object)
     end
 
     -- Enforce explicit key when markdown parsing for shortname is enabled.
-    if Options["parse_markdown_in_shortname"] then
+    if Options["parse_markdown_in_shortname"] or object._parse_markdown_shortname then
         if object.key == nil then
             quarto.log.error("[acronyms] Each acronym must provide an explicit `key` when parse_markdown_in_shortname=true (shortname may contain formatting).")
             assert(false)
@@ -77,24 +77,30 @@ function Acronym:new(object)
         object.key = object.key or object.shortname
     end
 
-    -- If the plural forms are not set, we construct sane defaults instead.
+    -- Track whether the user explicitly provided plural forms before we add defaults.
+    local explicit_plural_short = false
+    local explicit_plural_long  = false
+    if object.plural then
+        if object.plural.shortname ~= nil then explicit_plural_short = true end
+        if object.plural.longname  ~= nil then explicit_plural_long  = true end
+    end
+
+    -- If the plural table itself is missing, create it so downstream code works.
     if not object.plural then
         object.plural = {}
     end
+    -- Provide fallback defaults (still created so that rendering singular works),
+    -- but we will forbid their use when a plural invocation is requested.
     if not object.plural.shortname then
-        if pandoc.utils.type and pandoc.utils.type(object.shortname) == "Inlines" then
-            object.plural.shortname = pandoc.utils.stringify(object.shortname) .. 's'
-        else
-            object.plural.shortname = object.shortname .. 's'
-        end
+        object.plural.shortname = Helpers.inlines_to_string(object.shortname) .. 's'
     end
     if not object.plural.longname then
-        if pandoc.utils.type and pandoc.utils.type(object.longname) == "Inlines" then
-            object.plural.longname = pandoc.utils.stringify(object.longname) .. 's'
-        else
-            object.plural.longname = object.longname .. 's'
-        end
+        object.plural.longname = Helpers.inlines_to_string(object.longname) .. 's'
     end
+
+    -- Persist explicitness flags for later validation when plural usage is requested.
+    object._explicit_plural_shortname = explicit_plural_short
+    object._explicit_plural_longname  = explicit_plural_long
 
     return object
 end
@@ -104,14 +110,8 @@ end
 function Acronym.__tostring(acronym)
     local str = "Acronym{"
     str = str .. "key=" .. acronym.key .. ";"
-    local function val(v)
-        if pandoc.utils and pandoc.utils.type and pandoc.utils.type(v)=="Inlines" then
-            return pandoc.utils.stringify(v)
-        end
-        return tostring(v)
-    end
-    str = str .. "short=" .. val(acronym.shortname) .. ";"
-    str = str .. "long=" .. val(acronym.longname) .. ";"
+    str = str .. "short=" .. Helpers.inlines_to_string(acronym.shortname) .. ";"
+    str = str .. "long=" .. Helpers.inlines_to_string(acronym.longname) .. ";"
     str = str .. "occurrences=" .. acronym.occurrences .. ";"
     str = str .. "definition_order=" .. tostring(acronym.definition_order) .. ";"
     str = str .. "usage_order=" .. tostring(acronym.usage_order)
@@ -138,7 +138,14 @@ function Acronym:clone()
     for k, v in pairs(self) do
         fields_copy[k] = v
     end
-    return Acronym:new(fields_copy)
+    -- Preserve explicit plural flags; Acronym:new recomputes them and would
+    -- incorrectly mark generated defaults as explicit. Store originals.
+    local explicit_short = self._explicit_plural_shortname
+    local explicit_long  = self._explicit_plural_longname
+    local cloned = Acronym:new(fields_copy)
+    cloned._explicit_plural_shortname = explicit_short
+    cloned._explicit_plural_longname  = explicit_long
+    return cloned
 end
 
 
@@ -240,81 +247,33 @@ function Acronyms:parseFromMetadata(metadata, on_duplicate)
         -- Remember that each of these values can be nil!
         -- By using `and`, we make sure that `stringify` is applied on non-nil.
         local key = v.key and pandoc.utils.stringify(v.key)
-        local shortname
-        if v.shortname then
-            if Options["parse_markdown_in_shortname"] then
-                local ptype = pandoc.utils.type and pandoc.utils.type(v.shortname)
-                if ptype == "Inlines" or v.shortname.t == "MetaInlines" then
-                    if ptype == "Inlines" then
-                        shortname = v.shortname
-                    else
-                        local arr = {}
-                        for i=1,#v.shortname do arr[#arr+1] = v.shortname[i] end
-                        shortname = arr
-                    end
-                else
-                    shortname = pandoc.utils.stringify(v.shortname)
-                end
+        -- Start from global flags
+        local local_short_md = Options["parse_markdown_in_shortname"]
+        local local_long_md  = Options["parse_markdown_in_longname"]
+        if v.markdown ~= nil then
+            local md = pandoc.utils.stringify(v.markdown):lower()
+            if md == "false" or md == "no" or md == "0" or md == "" then
+                local_short_md, local_long_md = false, false
+            elseif md == "longname" then
+                local_short_md, local_long_md = false, true
+            elseif md == "shortname" then
+                local_short_md, local_long_md = true, false
+            elseif md == "both" or md == "all" or md == "true" or md == "yes" or md == "y" or md == "1" then
+                local_short_md, local_long_md = true, true
             else
-                shortname = pandoc.utils.stringify(v.shortname)
+                quarto.log.warning("[acronyms] Unrecognized per-acronym markdown value '"..md.."' (expected false|shortname|longname|both). Treating as false.")
+                local_short_md, local_long_md = false, false
             end
         end
-        local longname
-        if v.longname then
-            if Options["parse_markdown_in_longname"] then
-                local ptype = pandoc.utils.type and pandoc.utils.type(v.longname)
-                if ptype == "Inlines" or v.longname.t == "MetaInlines" then
-                    -- Convert MetaInlines to raw array of inline elements
-                    if ptype == "Inlines" then
-                        longname = v.longname
-                    else
-                        local arr = {}
-                        for i=1,#v.longname do arr[#arr+1] = v.longname[i] end
-                        longname = arr
-                    end
-                else
-                    longname = pandoc.utils.stringify(v.longname)
-                end
-            else
-                longname = pandoc.utils.stringify(v.longname)
-            end
-        end
+        -- Extract using effective local flags (which may equal globals if no override)
+        local shortname = Helpers.extract_meta_field(v.shortname, local_short_md)
+        local longname  = Helpers.extract_meta_field(v.longname,  local_long_md)
     -- raw longname parsed
-        local shortname_plural = v.plural and v.plural.shortname and (function()
-            if Options["parse_markdown_in_shortname"] then
-                local sn = v.plural.shortname
-                local ptype = pandoc.utils.type and pandoc.utils.type(sn)
-                if ptype == "Inlines" or (sn and sn.t == "MetaInlines") then
-                    if ptype == "Inlines" then return sn else
-                        local arr = {}
-                        for i=1,#sn do arr[#arr+1] = sn[i] end
-                        return arr
-                    end
-                else
-                    return pandoc.utils.stringify(sn)
-                end
-            else
-                return pandoc.utils.stringify(v.plural.shortname)
-            end
-        end)()
+        local shortname_plural
         local longname_plural
-        if v.plural and v.plural.longname then
-            if Options["parse_markdown_in_longname"] then
-                local ptype = pandoc.utils.type and pandoc.utils.type(v.plural.longname)
-                if ptype == "Inlines" or v.plural.longname.t == "MetaInlines" then
-                    if ptype == "Inlines" then
-                        longname_plural = v.plural.longname
-                    else
-                        local arr = {}
-                        for i=1,#v.plural.longname do arr[#arr+1] = v.plural.longname[i] end
-                        longname_plural = arr
-                    end
-                else
-                    longname_plural = pandoc.utils.stringify(v.plural.longname)
-                end
-            else
-                longname_plural = pandoc.utils.stringify(v.plural.longname)
-            end
+        if v.plural then
+            shortname_plural = Helpers.extract_meta_field(v.plural.shortname, local_short_md)
+            longname_plural  = Helpers.extract_meta_field(v.plural.longname,  local_long_md)
         end
         local acronym = Acronym:new{
             key = key,
@@ -324,6 +283,8 @@ function Acronyms:parseFromMetadata(metadata, on_duplicate)
                 shortname = shortname_plural,
                 longname = longname_plural,
             },
+            _parse_markdown_shortname = local_short_md,
+            _parse_markdown_longname = local_long_md,
             original_metadata = v,
         }
         Acronyms:add(acronym, on_duplicate)
