@@ -1,14 +1,19 @@
 ---
 acronyms:
-  parse_markdown_in_longname: true
+  markdown: longname
   keys:
-    - shortname: CDI
+    - key: CDI
+      shortname: CDI
       longname: "*Clostridium difficile* infection"
+    - key: A
+      shortname: A
+      longname: "\\*Alpha\\* **process**"
+      markdown: false
   style: short-long
 ---
 
 # Introduction {#intro}
 
-First mention: \acr{CDI}.
+First mention: \acr{CDI}. Also check \acr{A} (should render without markdown). Markdown-like charcters can be escaped if necessary.
 
-Second mention: \acr{CDI}.
+Second mention: \acr{CDI}. Second \acr{A}.

@@ -1,9 +1,10 @@
 ---
 acronyms:
-  parse_markdown_in_longname: true
+  markdown: longname
   style: short-long
   keys:
-    - shortname: bla
+    - key: bla
+      shortname: bla
       longname: "*bla*~NDM~ (New Delhi metallo-beta-lactamase)"
 ---
 

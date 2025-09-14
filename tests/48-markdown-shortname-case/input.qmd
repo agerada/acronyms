@@ -1,7 +1,6 @@
 ---
 acronyms:
-  parse_markdown_in_shortname: true
-  parse_markdown_in_longname: true
+  markdown: both
   style: short-long
   keys:
     - key: em
