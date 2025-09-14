@@ -165,4 +165,136 @@ function Helpers.extract_meta_field(field, parse_markdown)
     end
 end
 
+
+-- Capitalize first alphabetical character of a string.
+function Helpers.capitalize_first(s)
+    return (tostring(s):gsub("^%l", string.upper))
+end
+
+
+-- Normalize value into an array of Pandoc inlines.
+function Helpers.ensure_inlines(obj)
+    if type(obj) == "string" then return { pandoc.Str(obj) } end
+    if pandoc and pandoc.utils and pandoc.utils.type then
+        local t = pandoc.utils.type(obj)
+        if t == "Inlines" then
+            local arr = {}
+            for i = 1, #obj do arr[#arr+1] = obj[i] end
+            return arr
+        elseif t == "List" then
+            local ok = true
+            for i = 1, #obj do
+                local v = obj[i]
+                if type(v) ~= "table" or v.t == nil then ok = false break end
+            end
+            if ok then
+                local arr = {}
+                for i = 1, #obj do arr[#arr+1] = obj[i] end
+                return arr
+            end
+        end
+    end
+    if type(obj) == "table" and obj.t ~= nil then
+        return { obj }
+    end
+    if type(obj) == "table" then
+        local ok = true
+        for _, v in ipairs(obj) do if type(v) ~= "table" or v.t == nil then ok = false break end end
+        if ok then return obj end
+    end
+    return { pandoc.Str(pandoc.utils and pandoc.utils.stringify and pandoc.utils.stringify(obj) or tostring(obj)) }
+end
+
+
+-- Create a rich element preserving inline structures; returns Link or inlines/Str.
+function Helpers.create_rich_element(content, key, insert_links)
+    local inlines = Helpers.ensure_inlines(content)
+    if insert_links then
+        return pandoc.Link(inlines, Helpers.key_to_link(key))
+    else
+        if #inlines == 1 then return inlines[1] else return inlines end
+    end
+end
+
+
+-- Detect whether a table is an array of Pandoc inline nodes
+function Helpers.is_inline_array(tbl)
+    if type(tbl) ~= "table" then return false end
+    for i, v in ipairs(tbl) do
+        if type(v) ~= "table" or v.t == nil then return false end
+    end
+    return #tbl > 0
+end
+
+
+-- Transform inlines or strings according to case_kind while preserving inline structure.
+function Helpers.transform_case(value, case_kind)
+    -- String values
+    if type(value) == "string" then
+        if case_kind == "upper" then return value:upper()
+        elseif case_kind == "lower" then return value:lower()
+        elseif case_kind == "sentence" then return Helpers.capitalize_first(value)
+        else return value end
+    end
+
+    -- If it's not a plain inline array, check for Pandoc Inlines/List
+    if not Helpers.is_inline_array(value) then
+        if pandoc.utils and pandoc.utils.type then
+            local t = pandoc.utils.type(value)
+            if t ~= "Inlines" and t ~= "List" then
+                return value
+            end
+        else
+            return value
+        end
+    end
+
+    local done_first = false
+    local simple_containers = {
+        Emph=true, Strong=true, Span=true, Strikeout=true,
+        SmallCaps=true, Superscript=true, Subscript=true, Underline=true
+    }
+
+    local function transform_inlines(src)
+        local dest = {}
+        for _, il in ipairs(src) do
+            if il.t == "Str" and (il.text or il.c) then
+                local txt = il.text or il.c
+                if case_kind == "upper" then
+                    txt = txt:upper()
+                elseif case_kind == "lower" then
+                    txt = txt:lower()
+                elseif case_kind == "sentence" and not done_first then
+                    local i = txt:find("%a")
+                    if i then
+                        txt = txt:sub(1,i-1)..txt:sub(i,i):upper()..txt:sub(i+1)
+                        done_first = true
+                    end
+                end
+                dest[#dest+1] = pandoc.Str(txt)
+            elseif simple_containers[il.t] and type(il.c) == "table" then
+                local inner = transform_inlines(il.c)
+                if il.t == "Span" then
+                    dest[#dest+1] = pandoc.Span(inner, il.attr)
+                else
+                    local ctor = pandoc[il.t]
+                    if ctor then
+                        dest[#dest+1] = ctor(inner)
+                    else
+                        local copy = {}
+                        for k, v in pairs(il) do copy[k] = v end
+                        copy.c = inner
+                        dest[#dest+1] = copy
+                    end
+                end
+            else
+                dest[#dest+1] = il
+            end
+        end
+        return dest
+    end
+
+    return transform_inlines(value)
+end
+
 return Helpers

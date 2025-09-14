@@ -45,48 +45,7 @@ local styles = {}
 
 -- Local helper function to create either a Str or a Link,
 -- depending on whether we want to insert links.
-local function ensure_inlines(obj)
-    if type(obj) == "string" then return { pandoc.Str(obj) } end
-    if pandoc and pandoc.utils and pandoc.utils.type then
-        local t = pandoc.utils.type(obj)
-        if t == "Inlines" then
-            local arr = {}
-            for i = 1, #obj do arr[#arr+1] = obj[i] end
-            return arr
-        elseif t == "List" then
-            local ok = true
-            for i = 1, #obj do
-                local v = obj[i]
-                if type(v) ~= "table" or v.t == nil then ok = false break end
-            end
-            if ok then
-                local arr = {}
-                for i = 1, #obj do arr[#arr+1] = obj[i] end
-                return arr
-            end
-        end
-    end
-    if type(obj) == "table" and obj.t ~= nil then
-        return { obj }
-    end
-    if type(obj) == "table" then
-        local ok = true
-        for _, v in ipairs(obj) do if type(v) ~= "table" or v.t == nil then ok = false break end end
-        if ok then return obj end
-    end
-    return { pandoc.Str(pandoc.utils and pandoc.utils.stringify and pandoc.utils.stringify(obj) or tostring(obj)) }
-end
-
--- Enhanced element creator (new logic) able to preserve existing rich inline
--- structures (Emph, Strong, etc.). Internal code now uses this.
-local function create_rich_element(content, key, insert_links)
-    local inlines = ensure_inlines(content)
-    if insert_links then
-        return pandoc.Link(inlines, Helpers.key_to_link(key))
-    else
-        if #inlines == 1 then return inlines[1] else return inlines end
-    end
-end
+-- Use helpers from Helpers for inlines and rich element creation
 
 -- Legacy create_element (unchanged original behavior): takes raw string content
 -- and returns either a Link (with the content as inlines) or a Str.
@@ -103,8 +62,8 @@ end
 -- Next use: short name
 styles["long-short"] = function(acronym, insert_links, is_first_use)
     if is_first_use then
-    local longname_elem = ensure_inlines(acronym.longname)
-    local shortname_elem = ensure_inlines(acronym.shortname)
+    local longname_elem = Helpers.ensure_inlines(acronym.longname)
+    local shortname_elem = Helpers.ensure_inlines(acronym.shortname)
         local all = {}
         for _, v in ipairs(longname_elem) do table.insert(all, v) end
         table.insert(all, pandoc.Str(" ("))
@@ -116,7 +75,7 @@ styles["long-short"] = function(acronym, insert_links, is_first_use)
             return all
         end
     else
-    local elem = create_rich_element(acronym.shortname, acronym.key, insert_links)
+    local elem = Helpers.create_rich_element(acronym.shortname, acronym.key, insert_links)
         if type(elem) == "table" then return elem else return {elem} end
     end
 end
@@ -126,8 +85,8 @@ end
 -- Next use: short name
 styles["short-long"] = function(acronym, insert_links, is_first_use)
     if is_first_use then
-    local shortname_elem = ensure_inlines(acronym.shortname)
-        local longname_elem = ensure_inlines(acronym.longname)
+    local shortname_elem = Helpers.ensure_inlines(acronym.shortname)
+        local longname_elem = Helpers.ensure_inlines(acronym.longname)
         local all = {}
         for _, v in ipairs(shortname_elem) do table.insert(all, v) end
         table.insert(all, pandoc.Str(" ("))
@@ -139,7 +98,7 @@ styles["short-long"] = function(acronym, insert_links, is_first_use)
             return all
         end
     else
-    local elem = create_rich_element(acronym.shortname, acronym.key, insert_links)
+    local elem = Helpers.create_rich_element(acronym.shortname, acronym.key, insert_links)
         if type(elem) == "table" then return elem else return {elem} end
     end
 end
@@ -147,7 +106,7 @@ end
 -- First use: long name
 -- Next use: long name
 styles["long-long"] = function(acronym, insert_links)
-    local elem = create_rich_element(acronym.longname, acronym.key, insert_links)
+    local elem = Helpers.create_rich_element(acronym.longname, acronym.key, insert_links)
     if type(elem) == "table" then return elem else return {elem} end
 end
 
@@ -159,8 +118,8 @@ styles["short-footnote"] = function(acronym, insert_links, is_first_use)
         -- Main text: plain shortname (no link)
         local text = pandoc.Str(acronym.shortname)
         -- Footnote: [shortname](link): longname
-        local shortname_link = create_element(acronym.shortname, acronym.key, insert_links, false)
-        local longname_elem = ensure_inlines(acronym.longname)
+    local shortname_link = create_element(acronym.shortname, acronym.key, insert_links)
+    local longname_elem = Helpers.ensure_inlines(acronym.longname)
         local plain = {}
         if type(shortname_link) == "table" then for _, v in ipairs(shortname_link) do table.insert(plain, v) end else table.insert(plain, shortname_link) end
         table.insert(plain, pandoc.Str(": "))
@@ -168,7 +127,7 @@ styles["short-footnote"] = function(acronym, insert_links, is_first_use)
         local note = pandoc.Note(pandoc.Plain(plain))
         return { text, note }
     else
-    local elem = create_rich_element(acronym.shortname, acronym.key, insert_links)
+    local elem = Helpers.create_rich_element(acronym.shortname, acronym.key, insert_links)
         if type(elem) == "table" then return elem else return {elem} end
     end
 end
@@ -213,86 +172,9 @@ return function(acronym, style_name, insert_links, is_first_use, plural,
         acronym.longname = acronym.plural.longname
     end
 
-    -- Functional case transformation that preserves inline formatting.
+    -- Delegate case transformation to Helpers.transform_case which preserves inline formatting
     local function transform_case(value, case_kind)
-        -- String values
-        if type(value) == "string" then
-            if case_kind == "upper" then return value:upper()
-            elseif case_kind == "lower" then return value:lower()
-            elseif case_kind == "sentence" then return capitalize_first(value)
-            else return value end
-        end
-
-        -- Detect a list/array of inline nodes even if it's a plain Lua table
-        local function is_inline_array(tbl)
-            if type(tbl) ~= "table" then return false end
-            -- Quick check: all numeric indices contain tables with a .t tag
-            for i, v in ipairs(tbl) do
-                if type(v) ~= "table" or v.t == nil then return false end
-            end
-            return #tbl > 0
-        end
-
-        if not is_inline_array(value) then
-            -- Maybe it's a Pandoc list-like object
-            if pandoc.utils and pandoc.utils.type then
-                local t = pandoc.utils.type(value)
-                if t == "Inlines" or t == "List" then
-                    -- acceptable – let code continue using value as array
-                else
-                    return value
-                end
-            else
-                return value
-            end
-        end
-
-        local done_first = false
-        local simple_containers = {
-            Emph=true, Strong=true, Span=true, Strikeout=true,
-            SmallCaps=true, Superscript=true, Subscript=true, Underline=true
-        }
-
-        local function transform_inlines(src)
-            local dest = {}
-            for _, il in ipairs(src) do
-                if il.t == "Str" and (il.text or il.c) then
-                    local txt = il.text or il.c
-                    if case_kind == "upper" then
-                        txt = txt:upper()
-                    elseif case_kind == "lower" then
-                        txt = txt:lower()
-                    elseif case_kind == "sentence" and not done_first then
-                        local i = txt:find("%a")
-                        if i then
-                            txt = txt:sub(1,i-1)..txt:sub(i,i):upper()..txt:sub(i+1)
-                            done_first = true
-                        end
-                    end
-                    dest[#dest+1] = pandoc.Str(txt)
-                elseif simple_containers[il.t] and type(il.c) == "table" then
-                    local inner = transform_inlines(il.c)
-                    if il.t == "Span" then
-                        dest[#dest+1] = pandoc.Span(inner, il.attr)
-                    else
-                        local ctor = pandoc[il.t]
-                        if ctor then
-                            dest[#dest+1] = ctor(inner)
-                        else
-                            local copy = {}
-                            for k, v in pairs(il) do copy[k] = v end
-                            copy.c = inner
-                            dest[#dest+1] = copy
-                        end
-                    end
-                else
-                    dest[#dest+1] = il
-                end
-            end
-            return dest
-        end
-
-        return transform_inlines(value)
+        return Helpers.transform_case(value, case_kind)
     end
 
     if case == "upper" or case == "lower" or case == "sentence" then
