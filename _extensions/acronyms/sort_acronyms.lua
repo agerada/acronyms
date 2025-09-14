@@ -18,14 +18,27 @@ local sorting_strategies = {}
 
 -- Sort acronyms by their shortname, in case-sensitive alphabetical order.
 sorting_strategies["alphabetical"] = function(acronym1, acronym2)
-    -- TODO: check that this works with UTF-8 characters
-    return acronym1.shortname < acronym2.shortname
+    local a = acronym1.shortname
+    local b = acronym2.shortname
+    if pandoc and pandoc.utils and pandoc.utils.type then
+        if pandoc.utils.type(a) == "Inlines" then a = pandoc.utils.stringify(a) end
+        if pandoc.utils.type(b) == "Inlines" then b = pandoc.utils.stringify(b) end
+    end
+    return a < b
 end
 
 
 -- Sort acronyms by their shortname, in case-insensitive alphabetical order.
 sorting_strategies["alphabetical-case-insensitive"] = function(acronym1, acronym2)
-    return acronym1.shortname:upper() < acronym2.shortname:upper()
+    local a = acronym1.shortname
+    local b = acronym2.shortname
+    if pandoc and pandoc.utils and pandoc.utils.type then
+        if pandoc.utils.type(a) == "Inlines" then a = pandoc.utils.stringify(a) end
+        if pandoc.utils.type(b) == "Inlines" then b = pandoc.utils.stringify(b) end
+    end
+    a = tostring(a):upper()
+    b = tostring(b):upper()
+    return a < b
 end
 
 
