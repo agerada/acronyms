@@ -9,6 +9,6 @@ acronyms:
 
 # Introduction {#intro}
 
-Markdown does **NOT** work with advanced options like sentence case: \acr[case=sentence]{CDI}.
+Markdown works with advanced options like sentence case: \acr[case=sentence]{CDI}.
 
-Upper case, however, works: \acr[case=upper, first_use=true]{CDI}.
+And upper case: \acr[case=upper, first_use=true]{CDI}.

@@ -5,6 +5,6 @@
 
 # Introduction {#intro}
 
-Markdown does **NOT** work with advanced options like sentence case: [CDI (Clostridium difficile infection)](#acronyms_CDI).
+Markdown works with advanced options like sentence case: [CDI (Clostridium difficile infection)](#acronyms_CDI).
 
-Upper case, however, works: [CDI (CLOSTRIDIUM DIFFICILE INFECTION)](#acronyms_CDI).
+And upper case: [CDI (CLOSTRIDIUM DIFFICILE INFECTION)](#acronyms_CDI).
