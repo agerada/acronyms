@@ -1,0 +1,13 @@
+---
+acronyms:
+  markdown: longname
+  keys:
+    - key: TST
+      shortname: TST
+      longname: "`inline-code()` function"
+  style: short-long
+---
+
+# Intro
+
+Currently, chaning the case can cause some markdown to drop: \acr[case=upper]{TST}.
