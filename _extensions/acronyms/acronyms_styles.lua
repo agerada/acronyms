@@ -79,7 +79,7 @@ end
 
 -- Enhanced element creator (new logic) able to preserve existing rich inline
 -- structures (Emph, Strong, etc.). Internal code now uses this.
-local function create_rich_element(content, key, insert_links, is_longname)
+local function create_rich_element(content, key, insert_links)
     local inlines = ensure_inlines(content)
     if insert_links then
         return pandoc.Link(inlines, Helpers.key_to_link(key))
@@ -116,7 +116,7 @@ styles["long-short"] = function(acronym, insert_links, is_first_use)
             return all
         end
     else
-    local elem = create_rich_element(acronym.shortname, acronym.key, insert_links, false)
+    local elem = create_rich_element(acronym.shortname, acronym.key, insert_links)
         if type(elem) == "table" then return elem else return {elem} end
     end
 end
@@ -139,7 +139,7 @@ styles["short-long"] = function(acronym, insert_links, is_first_use)
             return all
         end
     else
-        local elem = create_element(acronym.shortname, acronym.key, insert_links, false)
+    local elem = create_rich_element(acronym.shortname, acronym.key, insert_links)
         if type(elem) == "table" then return elem else return {elem} end
     end
 end
@@ -147,7 +147,7 @@ end
 -- First use: long name
 -- Next use: long name
 styles["long-long"] = function(acronym, insert_links)
-    local elem = create_rich_element(acronym.longname, acronym.key, insert_links, true)
+    local elem = create_rich_element(acronym.longname, acronym.key, insert_links)
     if type(elem) == "table" then return elem else return {elem} end
 end
 
@@ -168,7 +168,7 @@ styles["short-footnote"] = function(acronym, insert_links, is_first_use)
         local note = pandoc.Note(pandoc.Plain(plain))
         return { text, note }
     else
-    local elem = create_rich_element(acronym.shortname, acronym.key, insert_links, false)
+    local elem = create_rich_element(acronym.shortname, acronym.key, insert_links)
         if type(elem) == "table" then return elem else return {elem} end
     end
 end
