@@ -57,6 +57,20 @@ local function create_element(content, key, insert_links)
     end
 end
 
+-- Helper to join two inline arrays as: <front> (<back>)
+local function make_parenthesized(front_elems, back_elems, insert_links, key)
+    local all = {}
+    for _, v in ipairs(front_elems) do table.insert(all, v) end
+    table.insert(all, pandoc.Str(" ("))
+    for _, v in ipairs(back_elems) do table.insert(all, v) end
+    table.insert(all, pandoc.Str(")"))
+    if insert_links then
+        return { pandoc.Link(all, Helpers.key_to_link(key)) }
+    else
+        return all
+    end
+end
+
 
 -- First use: long name (short name)
 -- Next use: short name
@@ -64,16 +78,7 @@ styles["long-short"] = function(acronym, insert_links, is_first_use)
     if is_first_use then
     local longname_elem = Helpers.ensure_inlines(acronym.longname)
     local shortname_elem = Helpers.ensure_inlines(acronym.shortname)
-        local all = {}
-        for _, v in ipairs(longname_elem) do table.insert(all, v) end
-        table.insert(all, pandoc.Str(" ("))
-        for _, v in ipairs(shortname_elem) do table.insert(all, v) end
-        table.insert(all, pandoc.Str(")"))
-        if insert_links then
-            return { pandoc.Link(all, Helpers.key_to_link(acronym.key)) }
-        else
-            return all
-        end
+    return make_parenthesized(longname_elem, shortname_elem, insert_links, acronym.key)
     else
     local elem = Helpers.create_rich_element(acronym.shortname, acronym.key, insert_links)
         if type(elem) == "table" then return elem else return {elem} end
@@ -87,16 +92,7 @@ styles["short-long"] = function(acronym, insert_links, is_first_use)
     if is_first_use then
     local shortname_elem = Helpers.ensure_inlines(acronym.shortname)
         local longname_elem = Helpers.ensure_inlines(acronym.longname)
-        local all = {}
-        for _, v in ipairs(shortname_elem) do table.insert(all, v) end
-        table.insert(all, pandoc.Str(" ("))
-        for _, v in ipairs(longname_elem) do table.insert(all, v) end
-        table.insert(all, pandoc.Str(")"))
-        if insert_links then
-            return { pandoc.Link(all, Helpers.key_to_link(acronym.key)) }
-        else
-            return all
-        end
+    return make_parenthesized(shortname_elem, longname_elem, insert_links, acronym.key)
     else
     local elem = Helpers.create_rich_element(acronym.shortname, acronym.key, insert_links)
         if type(elem) == "table" then return elem else return {elem} end
@@ -177,13 +173,11 @@ return function(acronym, style_name, insert_links, is_first_use, plural,
         return Helpers.transform_case(value, case_kind)
     end
 
-    if case == "upper" or case == "lower" or case == "sentence" then
-        if case_target == "short" or case_target == "both" then
-            acronym.shortname = transform_case(acronym.shortname, case)
-        end
-        if case_target == "long" or case_target == "both" then
-            acronym.longname = transform_case(acronym.longname, case)
-        end
+    if case_target == "short" or case_target == "both" then
+        acronym.shortname = transform_case(acronym.shortname, case)
+    end
+    if case_target == "long" or case_target == "both" then
+        acronym.longname = transform_case(acronym.longname, case)
     end
 
     local rendered = styles[style_name](acronym, insert_links, is_first_use, case_target)
