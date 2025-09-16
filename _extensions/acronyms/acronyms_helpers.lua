@@ -229,6 +229,8 @@ end
 
 -- Transform inlines or strings according to case_kind while preserving inline structure.
 function Helpers.transform_case(value, case_kind)
+    if case_kind == nil then return value end
+
     -- String values
     if type(value) == "string" then
         if case_kind == "upper" then return value:upper()
@@ -268,6 +270,7 @@ function Helpers.transform_case(value, case_kind)
                     local i = txt:find("%a")
                     if i then
                         txt = txt:sub(1,i-1)..txt:sub(i,i):upper()..txt:sub(i+1)
+                        -- set done_first to ensure only one capitalization in sentence case
                         done_first = true
                     end
                 end

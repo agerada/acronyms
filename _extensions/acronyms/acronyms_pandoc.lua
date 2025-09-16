@@ -132,7 +132,6 @@ end
 -- ]]
 function AcronymsPandoc.generateDefinitionList(sorted_acronyms)
     local definition_list = {}
-    local Helpers = require("acronyms_helpers")
     for _, acronym in ipairs(sorted_acronyms) do
         local name = pandoc.Span(
             acronym.shortname,
