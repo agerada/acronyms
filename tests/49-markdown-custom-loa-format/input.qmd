@@ -1,0 +1,18 @@
+---
+acronyms:
+  keys:
+    - shortname: "**RL**"
+      longname: "*Reinforcement* Learning"
+      markdown: both
+      key: RL
+    - shortname: Qmd
+      longname: "*Quarto* document"
+      markdown: longname
+  loa_format: '`- *{shortname}*: **{longname}**`{=raw}'
+---
+
+# Introduction {#intro}
+
+This paragraph mentions \acr{RL} for the first time.
+
+And here, \acr{Qmd} is mentioned.

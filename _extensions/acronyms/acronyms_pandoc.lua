@@ -171,45 +171,25 @@ function AcronymsPandoc.generateCustomFormat(sorted_acronyms, loa_format)
             "[acronyms] Generating definition for acronym", acronym.key
         )
         local id = Helpers.key_to_id(acronym.key)
+        acronym_markup = loa_format
         -- The acronym's name. We want it to be rendered with an ID attribute.
-        local function serialize_shortname(acr)
-            if Options["parse_markdown_in_shortname"] and pandoc.utils.type and pandoc.utils.type(acr.shortname) == "Inlines" then
-                local pieces = {}
-                for i=1,#acr.shortname do
-                    local il = acr.shortname[i]
-                    if il.t == "Str" then table.insert(pieces, il.text)
-                    elseif il.t == "Space" then table.insert(pieces, " ")
-                    else
-                        table.insert(pieces, pandoc.write(pandoc.Pandoc({ pandoc.Para({ il }) }), 'markdown'):gsub('\n+$',''))
-                    end
-                end
-                return table.concat(pieces)
-            end
-            return acr.shortname
+        if acronym._parse_markdown_shortname and pandoc.utils.type and pandoc.utils.type(acronym.shortname) == "Inlines" then
+            local serialized_str = Helpers.serialize_inlines(acronym.shortname)
+            -- add markup for id
+            serialized_str = '[' .. serialized_str .. ']{#' .. id .. '}'
+            acronym_markup = acronym_markup:gsub("{shortname}", serialized_str)
+        else
+            local short_str_with_id = "[" .. acronym.shortname .. "]{#" .. id .. "}"
+            acronym_markup = acronym_markup:gsub("{shortname}", short_str_with_id)
         end
-        local name = "[" .. serialize_shortname(acronym) .. "]{#" .. id .. "}"
-        -- The `loa_format` should be a Markdown template, with `{shortname}`
-        -- and `{longname}` as placeholder values that we must replace.
-        local acronym_markup = loa_format:gsub("{shortname}", name)
-    if acronym._parse_markdown_longname and pandoc.utils.type and pandoc.utils.type(acronym.longname) == "Inlines" then
-            -- Serialize inlines back to markdown so template placeholder replacement keeps emphasis
-            local serialized = {}
-            for i=1,#acronym.longname do
-                local inline = acronym.longname[i]
-                if inline.t == "Str" then
-                    table.insert(serialized, inline.text)
-                elseif inline.t == "Space" then
-                    table.insert(serialized, " ")
-                else
-                    -- Fallback to stringify for complex inline (Emph etc.)
-                    table.insert(serialized, pandoc.write(pandoc.Pandoc({ pandoc.Para({ inline }) }), 'markdown'))
-                end
-            end
-            local serialized_str = table.concat(serialized):gsub('\n+$','')
+
+        if acronym._parse_markdown_longname and pandoc.utils.type and pandoc.utils.type(acronym.longname) == "Inlines" then
+            local serialized_str = Helpers.serialize_inlines(acronym.longname)
             acronym_markup = acronym_markup:gsub("{longname}", serialized_str)
         else
             acronym_markup = acronym_markup:gsub("{longname}", acronym.longname)
         end
+        
         quarto.log.debug(
             "[acronyms] Template markup processed as", acronym_markup
         )

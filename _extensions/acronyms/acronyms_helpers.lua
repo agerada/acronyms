@@ -142,6 +142,23 @@ function Helpers.inlines_to_string(v)
     return tostring(v)
 end
 
+
+-- Serialize an array of inline nodes (or any value that can be normalized
+-- to inlines) into a single Markdown string without trailing newlines.
+-- Falls back to `inlines_to_string` when pandoc.write is unavailable.
+function Helpers.serialize_inlines(v)
+    if v == nil then return "" end
+    if pandoc and pandoc.write then
+        local inlines = Helpers.ensure_inlines(v)
+        local doc = pandoc.Pandoc({ pandoc.Para(inlines) })
+        local ok, md = pcall(function() return pandoc.write(doc, 'markdown') end)
+        if ok and md then
+            return md:gsub('\n+$', '')
+        end
+    end
+    return Helpers.inlines_to_string(v)
+end
+
 -- Extract a metadata field (shortname/longname or plural variants) as either
 -- raw Inlines (array) when parse_markdown is true and the field is MetaInlines/Inlines,
 -- or as a plain string otherwise. Returns nil if the input is nil.
