@@ -166,7 +166,7 @@ end
 
 
 -- Defaults for markdown parsing flags (derived from unified 'markdown' option)
-Options["parse_markdown_in_longname"] = false
-Options["parse_markdown_in_shortname"] = false
+Options["parse_markdown_in_longname"] = true
+Options["parse_markdown_in_shortname"] = true
 
 return Options

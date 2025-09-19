@@ -50,10 +50,17 @@ local styles = {}
 -- Legacy create_element (unchanged original behavior): takes raw string content
 -- and returns either a Link (with the content as inlines) or a Str.
 local function create_element(content, key, insert_links)
+    -- Normalize content to a list of inlines
+    local inlines = Helpers.ensure_inlines(content)
     if insert_links then
-        return pandoc.Link(content, Helpers.key_to_link(key))
+        return pandoc.Link(inlines, Helpers.key_to_link(key))
     else
-        return pandoc.Str(content)
+        -- Return a single inline when possible, otherwise the inline list
+        if #inlines == 1 then
+            return inlines[1]
+        else
+            return inlines
+        end
     end
 end
 
@@ -112,16 +119,29 @@ end
 styles["short-footnote"] = function(acronym, insert_links, is_first_use)
     if is_first_use then
         -- Main text: plain shortname (no link)
-        local text = pandoc.Str(acronym.shortname)
+        local shortname_inlines = Helpers.ensure_inlines(acronym.shortname)
         -- Footnote: [shortname](link): longname
-    local shortname_link = create_element(acronym.shortname, acronym.key, insert_links)
-    local longname_elem = Helpers.ensure_inlines(acronym.longname)
+        local shortname_link = create_element(acronym.shortname, acronym.key, insert_links)
+        local longname_elem = Helpers.ensure_inlines(acronym.longname)
         local plain = {}
-        if type(shortname_link) == "table" then for _, v in ipairs(shortname_link) do table.insert(plain, v) end else table.insert(plain, shortname_link) end
+        if type(shortname_link) == "table" then
+            for _, v in ipairs(shortname_link) do table.insert(plain, v) end
+        else
+            table.insert(plain, shortname_link)
+        end
         table.insert(plain, pandoc.Str(": "))
         for _, v in ipairs(longname_elem) do table.insert(plain, v) end
         local note = pandoc.Note(pandoc.Plain(plain))
-        return { text, note }
+
+        -- Build the returned list: main inline(s) followed by the note
+        local result = {}
+        if #shortname_inlines == 1 then
+            table.insert(result, shortname_inlines[1])
+        else
+            for _, v in ipairs(shortname_inlines) do table.insert(result, v) end
+        end
+        table.insert(result, note)
+        return result
     else
     local elem = Helpers.create_rich_element(acronym.shortname, acronym.key, insert_links)
         if type(elem) == "table" then return elem else return {elem} end
@@ -153,8 +173,8 @@ return function(acronym, style_name, insert_links, is_first_use, plural,
     acronym = acronym:clone()
     if plural then
         -- Conditional strictness: if markdown parsing is enabled for a part, require an explicit plural for that part.
-        local need_long_strict = acronym._parse_markdown_longname and not acronym._explicit_plural_longname
-        local need_short_strict = acronym._parse_markdown_shortname and not acronym._explicit_plural_shortname
+    local need_long_strict = acronym._parse_markdown_longname and Helpers.contains_markdown(acronym.longname) and not acronym._explicit_plural_longname
+    local need_short_strict = acronym._parse_markdown_shortname and Helpers.contains_markdown(acronym.shortname) and not acronym._explicit_plural_shortname
         if need_long_strict then
             quarto.log.error("[acronyms] Plural form requested for '" .. tostring(acronym.key) .. "' but 'plural.longname' was not explicitly provided while markdown parsing is enabled for its longname. Define it under plural: { longname: ... } to use \\acrs{" .. tostring(acronym.key) .. "} .")
             assert(false)

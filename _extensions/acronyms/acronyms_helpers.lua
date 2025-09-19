@@ -118,6 +118,51 @@ function Helpers.parse_markdown_snippet(text)
     return inlines
 end
 
+-- Determine whether a value (string, MetaInlines, Inlines or inline-array) contains
+-- user-supplied Markdown formatting (emphasis, strong, code, links, raw inline, etc.).
+function Helpers.contains_markdown(value)
+    if value == nil then return false end
+
+    -- If we have a Pandoc type, check AST nodes directly
+    if pandoc and pandoc.utils and pandoc.utils.type then
+        local typ = pandoc.utils.type(value)
+        if typ == "Inlines" or typ == "MetaInlines" or typ == "List" then
+            local inlines = Helpers.ensure_inlines(value)
+            for _, il in ipairs(inlines) do
+                if il.t ~= "Str" and il.t ~= "Space" and il.t ~= "SoftBreak" and il.t ~= "LineBreak" then
+                    return true
+                end
+            end
+            return false
+        end
+    end
+
+    -- If it's a plain Lua array of inline-like nodes, inspect element types
+    if type(value) == "table" then
+        for _, v in ipairs(value) do
+            if type(v) == "table" and v.t ~= nil then
+                if v.t ~= "Str" and v.t ~= "Space" and v.t ~= "SoftBreak" and v.t ~= "LineBreak" then
+                    return true
+                end
+            end
+        end
+    end
+
+    -- Fallback heuristic on string content: common markdown tokens
+    local s = tostring(value)
+    if s:find("%*%*.-%*%*")  -- **strong**
+       or s:find("%*.-%*")    -- *emph*
+       or s:find("_.-_")      -- _emph_
+       or s:find("`")         -- inline code
+       or s:find("%[.-%]%(")  -- [text](link)
+       or s:find("!%[.-%]%(") -- image
+       then
+        return true
+    end
+
+    return false
+end
+
 -- Normalize a value (string or Pandoc Inlines/list) to a plain string.
 -- If v is an Inlines object (or a plain Lua array of inline nodes), we
 -- stringify it using pandoc.utils.stringify; otherwise fallback to tostring.

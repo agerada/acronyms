@@ -67,14 +67,14 @@ function Acronym:new(object)
     end
 
     -- Enforce explicit key when markdown parsing for shortname is enabled.
-    if Options["parse_markdown_in_shortname"] or object._parse_markdown_shortname then
+    if Helpers.contains_markdown(object.shortname) then
         if object.key == nil then
-            quarto.log.error("[acronyms] Each acronym must provide an explicit `key` when parse_markdown_in_shortname=true (shortname may contain formatting).")
+            quarto.log.error("[acronyms] Each acronym must provide an explicit `key` when using markdown in shortname.")
             assert(false)
         end
     else
         -- Legacy fallback.
-        object.key = object.key or object.shortname
+        object.key = object.key or Helpers.inlines_to_string(object.shortname)
     end
 
     -- Track whether the user explicitly provided plural forms before we add defaults.
