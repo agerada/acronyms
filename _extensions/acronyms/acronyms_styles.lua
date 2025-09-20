@@ -45,24 +45,9 @@ local styles = {}
 
 -- Local helper function to create either a Str or a Link,
 -- depending on whether we want to insert links.
--- Use helpers from Helpers for inlines and rich element creation
+-- Kept as a local reference here to keep compatibility with previous versions.
+create_element = Helpers.create_rich_element
 
--- Legacy create_element (unchanged original behavior): takes raw string content
--- and returns either a Link (with the content as inlines) or a Str.
-local function create_element(content, key, insert_links)
-    -- Normalize content to a list of inlines
-    local inlines = Helpers.ensure_inlines(content)
-    if insert_links then
-        return pandoc.Link(inlines, Helpers.key_to_link(key))
-    else
-        -- Return a single inline when possible, otherwise the inline list
-        if #inlines == 1 then
-            return inlines[1]
-        else
-            return inlines
-        end
-    end
-end
 
 -- Helper to join two inline arrays as: <front> (<back>)
 local function make_parenthesized(front_elems, back_elems, insert_links, key)
@@ -87,7 +72,7 @@ styles["long-short"] = function(acronym, insert_links, is_first_use)
     local shortname_elem = Helpers.ensure_inlines(acronym.shortname)
     return make_parenthesized(longname_elem, shortname_elem, insert_links, acronym.key)
     else
-    local elem = Helpers.create_rich_element(acronym.shortname, acronym.key, insert_links)
+    local elem = create_element(acronym.shortname, acronym.key, insert_links)
         if type(elem) == "table" then return elem else return {elem} end
     end
 end
@@ -101,7 +86,7 @@ styles["short-long"] = function(acronym, insert_links, is_first_use)
         local longname_elem = Helpers.ensure_inlines(acronym.longname)
     return make_parenthesized(shortname_elem, longname_elem, insert_links, acronym.key)
     else
-    local elem = Helpers.create_rich_element(acronym.shortname, acronym.key, insert_links)
+    local elem = create_element(acronym.shortname, acronym.key, insert_links)
         if type(elem) == "table" then return elem else return {elem} end
     end
 end
@@ -109,7 +94,7 @@ end
 -- First use: long name
 -- Next use: long name
 styles["long-long"] = function(acronym, insert_links)
-    local elem = Helpers.create_rich_element(acronym.longname, acronym.key, insert_links)
+    local elem = create_element(acronym.longname, acronym.key, insert_links)
     if type(elem) == "table" then return elem else return {elem} end
 end
 
@@ -143,7 +128,7 @@ styles["short-footnote"] = function(acronym, insert_links, is_first_use)
         table.insert(result, note)
         return result
     else
-    local elem = Helpers.create_rich_element(acronym.shortname, acronym.key, insert_links)
+    local elem = create_element(acronym.shortname, acronym.key, insert_links)
         if type(elem) == "table" then return elem else return {elem} end
     end
 end
