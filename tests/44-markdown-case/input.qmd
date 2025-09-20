@@ -1,10 +1,8 @@
 ---
 acronyms:
-  markdown: longname
   style: short-long
   keys:
-    - key: CDI
-      shortname: CDI
+    - shortname: CDI
       longname: "*clostridium difficile* infection"
 ---
 

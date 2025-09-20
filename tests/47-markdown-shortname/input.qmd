@@ -1,6 +1,5 @@
 ---
 acronyms:
-  markdown: longname
   style: long-short
   keys:
     - key: cdi

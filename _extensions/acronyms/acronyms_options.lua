@@ -140,33 +140,6 @@ function Options:parseOptionsFromMetadata(m)
             self.loa_format = pandoc.utils.stringify(options["loa_format"])
         end
     end
-
-    -- Unified markdown parsing option: markdown: false|longname|shortname|both
-    if options["markdown"] ~= nil then
-        local raw = pandoc.utils.stringify(options["markdown"]):lower()
-        if raw == "false" or raw == "no" or raw == "0" or raw == "" then
-            self.parse_markdown_in_longname = false
-            self.parse_markdown_in_shortname = false
-        elseif raw == "longname" then
-            self.parse_markdown_in_longname = true
-            self.parse_markdown_in_shortname = false
-        elseif raw == "shortname" then
-            self.parse_markdown_in_longname = false
-            self.parse_markdown_in_shortname = true
-        elseif raw == "both" or raw == "all" then
-            self.parse_markdown_in_longname = true
-            self.parse_markdown_in_shortname = true
-        else
-            quarto.log.warning("[acronyms] Unrecognized value for 'markdown': "..raw.." (expected false|longname|shortname|both). Treating as false.")
-            self.parse_markdown_in_longname = false
-            self.parse_markdown_in_shortname = false
-        end
-    end
 end
-
-
--- Defaults for markdown parsing flags (derived from unified 'markdown' option)
-Options["parse_markdown_in_longname"] = true
-Options["parse_markdown_in_shortname"] = true
 
 return Options

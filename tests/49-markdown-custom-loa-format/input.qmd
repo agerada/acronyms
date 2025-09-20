@@ -3,11 +3,9 @@ acronyms:
   keys:
     - shortname: "**RL**"
       longname: "*Reinforcement* Learning"
-      markdown: both
       key: RL
     - shortname: Qmd
       longname: "*Quarto* document"
-      markdown: longname
   loa_format: '`- *{shortname}*: **{longname}**`{=raw}'
 ---
 

@@ -211,16 +211,16 @@ function Helpers.extract_meta_field(field, parse_markdown)
     if field == nil then return nil end
     if parse_markdown then
         local ptype = pandoc.utils.type and pandoc.utils.type(field)
-        if ptype == "Inlines" or (type(field) == "table" and field.t == "MetaInlines") then
-            if ptype == "Inlines" then
-                return field
-            else
-                local arr = {}
-                for i=1,#field do arr[#arr+1] = field[i] end
-                return arr
-            end
+        if ptype == "Inlines" then
+            return field
+        elseif type(field) == "table" and field.t == "MetaInlines" then
+            local arr = {}
+            for i=1,#field do arr[#arr+1] = field[i] end
+            return arr
         else
-            return pandoc.utils.stringify(field)
+            -- Always parse to inlines so markdown formatting is preserved
+            local text = pandoc.utils.stringify(field)
+            return Helpers.parse_markdown_snippet(text)
         end
     else
         return pandoc.utils.stringify(field)

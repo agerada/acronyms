@@ -247,33 +247,15 @@ function Acronyms:parseFromMetadata(metadata, on_duplicate)
         -- Remember that each of these values can be nil!
         -- By using `and`, we make sure that `stringify` is applied on non-nil.
         local key = v.key and pandoc.utils.stringify(v.key)
-        -- Start from global flags
-        local local_short_md = Options["parse_markdown_in_shortname"]
-        local local_long_md  = Options["parse_markdown_in_longname"]
-        if v.markdown ~= nil then
-            local md = pandoc.utils.stringify(v.markdown):lower()
-            if md == "false" or md == "no" or md == "0" or md == "" then
-                local_short_md, local_long_md = false, false
-            elseif md == "longname" then
-                local_short_md, local_long_md = false, true
-            elseif md == "shortname" then
-                local_short_md, local_long_md = true, false
-            elseif md == "both" or md == "all" or md == "true" or md == "yes" or md == "y" or md == "1" then
-                local_short_md, local_long_md = true, true
-            else
-                quarto.log.warning("[acronyms] Unrecognized per-acronym markdown value '"..md.."' (expected false|shortname|longname|both). Treating as false.")
-                local_short_md, local_long_md = false, false
-            end
-        end
-        -- Extract using effective local flags (which may equal globals if no override)
-        local shortname = Helpers.extract_meta_field(v.shortname, local_short_md)
-        local longname  = Helpers.extract_meta_field(v.longname,  local_long_md)
+        -- Always parse markdown for names
+        local shortname = Helpers.extract_meta_field(v.shortname, true)
+        local longname  = Helpers.extract_meta_field(v.longname,  true)
     -- raw longname parsed
         local shortname_plural
         local longname_plural
         if v.plural then
-            shortname_plural = Helpers.extract_meta_field(v.plural.shortname, local_short_md)
-            longname_plural  = Helpers.extract_meta_field(v.plural.longname,  local_long_md)
+            shortname_plural = Helpers.extract_meta_field(v.plural.shortname, true)
+            longname_plural  = Helpers.extract_meta_field(v.plural.longname,  true)
         end
         local acronym = Acronym:new{
             key = key,
@@ -283,8 +265,6 @@ function Acronyms:parseFromMetadata(metadata, on_duplicate)
                 shortname = shortname_plural,
                 longname = longname_plural,
             },
-            _parse_markdown_shortname = local_short_md,
-            _parse_markdown_longname = local_long_md,
             original_metadata = v,
         }
         Acronyms:add(acronym, on_duplicate)

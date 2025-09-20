@@ -1,6 +1,5 @@
 ---
 acronyms:
-  markdown: both
   style: short-long
   keys:
     - key: em

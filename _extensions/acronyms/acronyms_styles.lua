@@ -138,9 +138,9 @@ return function(acronym, style_name, insert_links, is_first_use, plural,
     -- e.g., for plural form; and for sentence case
     acronym = acronym:clone()
     if plural then
-        -- Conditional strictness: if markdown parsing is enabled for a part, require an explicit plural for that part.
-    local need_long_strict = acronym._parse_markdown_longname and Helpers.contains_markdown(acronym.longname) and not acronym._explicit_plural_longname
-    local need_short_strict = acronym._parse_markdown_shortname and Helpers.contains_markdown(acronym.shortname) and not acronym._explicit_plural_shortname
+        -- Conditional strictness: when markdown is present in a part, require an explicit plural for that part.
+        local need_long_strict = Helpers.contains_markdown(acronym.longname) and not acronym._explicit_plural_longname
+        local need_short_strict = Helpers.contains_markdown(acronym.shortname) and not acronym._explicit_plural_shortname
         if need_long_strict then
             quarto.log.error("[acronyms] Plural form requested for '" .. tostring(acronym.key) .. "' but 'plural.longname' was not explicitly provided while markdown parsing is enabled for its longname. Define it under plural: { longname: ... } to use \\acrs{" .. tostring(acronym.key) .. "} .")
             assert(false)

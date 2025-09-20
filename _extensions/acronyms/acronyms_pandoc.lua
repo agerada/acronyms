@@ -137,18 +137,7 @@ function AcronymsPandoc.generateDefinitionList(sorted_acronyms)
             acronym.shortname,
             pandoc.Attr(Helpers.key_to_id(acronym.key), {}, {})
         )
-        local long_inlines
-    if pandoc.utils.type and pandoc.utils.type(acronym.longname) == "Inlines" then
-            long_inlines = {}
-            for i=1,#acronym.longname do long_inlines[#long_inlines+1] = acronym.longname[i] end
-        elseif type(acronym.longname) == "table" and #acronym.longname > 0 and acronym.longname[1].t then
-            long_inlines = {}
-            for i=1,#acronym.longname do long_inlines[#long_inlines+1] = acronym.longname[i] end
-    elseif acronym._parse_markdown_longname then
-            long_inlines = Helpers.parse_markdown_snippet(tostring(acronym.longname))
-        else
-            long_inlines = { pandoc.Str(tostring(acronym.longname)) }
-        end
+        local long_inlines = Helpers.ensure_inlines(acronym.longname)
         local longname_val = pandoc.Plain(long_inlines)
         table.insert(definition_list, { name, longname_val })
     end
@@ -173,22 +162,12 @@ function AcronymsPandoc.generateCustomFormat(sorted_acronyms, loa_format)
         local id = Helpers.key_to_id(acronym.key)
         acronym_markup = loa_format
         -- The acronym's name. We want it to be rendered with an ID attribute.
-        if acronym._parse_markdown_shortname and pandoc.utils.type and pandoc.utils.type(acronym.shortname) == "Inlines" then
-            local serialized_str = Helpers.serialize_inlines(acronym.shortname)
-            -- add markup for id
-            serialized_str = '[' .. serialized_str .. ']{#' .. id .. '}'
-            acronym_markup = acronym_markup:gsub("{shortname}", serialized_str)
-        else
-            local short_str_with_id = "[" .. acronym.shortname .. "]{#" .. id .. "}"
-            acronym_markup = acronym_markup:gsub("{shortname}", short_str_with_id)
-        end
+        local serialized_short = Helpers.serialize_inlines(acronym.shortname)
+        local short_str_with_id = '[' .. serialized_short .. ']{#' .. id .. '}'
+        acronym_markup = acronym_markup:gsub("{shortname}", short_str_with_id)
 
-        if acronym._parse_markdown_longname and pandoc.utils.type and pandoc.utils.type(acronym.longname) == "Inlines" then
-            local serialized_str = Helpers.serialize_inlines(acronym.longname)
-            acronym_markup = acronym_markup:gsub("{longname}", serialized_str)
-        else
-            acronym_markup = acronym_markup:gsub("{longname}", acronym.longname)
-        end
+        local serialized_long = Helpers.serialize_inlines(acronym.longname)
+        acronym_markup = acronym_markup:gsub("{longname}", serialized_long)
         
         quarto.log.debug(
             "[acronyms] Template markup processed as", acronym_markup

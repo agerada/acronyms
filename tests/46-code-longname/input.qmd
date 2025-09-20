@@ -1,9 +1,7 @@
 ---
 acronyms:
-  markdown: longname
   keys:
-    - key: TST
-      shortname: TST
+    - shortname: TST
       longname: "`inline-code()` function"
   style: short-long
 ---
