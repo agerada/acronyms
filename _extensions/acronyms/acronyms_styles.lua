@@ -35,10 +35,6 @@
 local Helpers = require("acronyms_helpers")
 
 
-local function capitalize_first(s)
-  return (s:gsub("^%l", string.upper))
-end
-
 -- The table containing all styles, indexed by the style's name.
 local styles = {}
 
@@ -51,11 +47,13 @@ create_element = Helpers.create_rich_element
 
 -- Helper to join two inline arrays as: <front> (<back>)
 local function make_parenthesized(front_elems, back_elems, insert_links, key)
+    front_elems = Helpers.ensure_inlines(front_elems)
+    back_elems = Helpers.ensure_inlines(back_elems)
     local all = {}
     for _, v in ipairs(front_elems) do table.insert(all, v) end
-    table.insert(all, pandoc.Str(" ("))
+        table.insert(all, pandoc.Str(" ("))
     for _, v in ipairs(back_elems) do table.insert(all, v) end
-    table.insert(all, pandoc.Str(")"))
+        table.insert(all, pandoc.Str(")"))
     if insert_links then
         return { pandoc.Link(all, Helpers.key_to_link(key)) }
     else
@@ -63,17 +61,13 @@ local function make_parenthesized(front_elems, back_elems, insert_links, key)
     end
 end
 
-
 -- First use: long name (short name)
 -- Next use: short name
 styles["long-short"] = function(acronym, insert_links, is_first_use)
     if is_first_use then
-    local longname_elem = Helpers.ensure_inlines(acronym.longname)
-    local shortname_elem = Helpers.ensure_inlines(acronym.shortname)
-    return make_parenthesized(longname_elem, shortname_elem, insert_links, acronym.key)
+        return make_parenthesized(acronym.longname, acronym.shortname, insert_links, acronym.key)
     else
-    local elem = create_element(acronym.shortname, acronym.key, insert_links)
-        if type(elem) == "table" then return elem else return {elem} end
+        return create_element(acronym.shortname, acronym.key, insert_links)
     end
 end
 
@@ -82,20 +76,16 @@ end
 -- Next use: short name
 styles["short-long"] = function(acronym, insert_links, is_first_use)
     if is_first_use then
-    local shortname_elem = Helpers.ensure_inlines(acronym.shortname)
-        local longname_elem = Helpers.ensure_inlines(acronym.longname)
-    return make_parenthesized(shortname_elem, longname_elem, insert_links, acronym.key)
+        return make_parenthesized(acronym.shortname, acronym.longname, insert_links, acronym.key)
     else
-    local elem = create_element(acronym.shortname, acronym.key, insert_links)
-        if type(elem) == "table" then return elem else return {elem} end
+        return create_element(acronym.shortname, acronym.key, insert_links)
     end
 end
 
 -- First use: long name
 -- Next use: long name
 styles["long-long"] = function(acronym, insert_links)
-    local elem = create_element(acronym.longname, acronym.key, insert_links)
-    if type(elem) == "table" then return elem else return {elem} end
+    return create_element(acronym.longname, acronym.key, insert_links)
 end
 
 -- First use: short name [^1]
@@ -109,27 +99,18 @@ styles["short-footnote"] = function(acronym, insert_links, is_first_use)
         local shortname_link = create_element(acronym.shortname, acronym.key, insert_links)
         local longname_elem = Helpers.ensure_inlines(acronym.longname)
         local plain = {}
-        if type(shortname_link) == "table" then
-            for _, v in ipairs(shortname_link) do table.insert(plain, v) end
-        else
-            table.insert(plain, shortname_link)
-        end
+        for _, v in ipairs(shortname_link) do table.insert(plain, v) end
         table.insert(plain, pandoc.Str(": "))
         for _, v in ipairs(longname_elem) do table.insert(plain, v) end
         local note = pandoc.Note(pandoc.Plain(plain))
 
         -- Build the returned list: main inline(s) followed by the note
         local result = {}
-        if #shortname_inlines == 1 then
-            table.insert(result, shortname_inlines[1])
-        else
-            for _, v in ipairs(shortname_inlines) do table.insert(result, v) end
-        end
+        for _, v in ipairs(shortname_inlines) do table.insert(result, v) end
         table.insert(result, note)
         return result
     else
-    local elem = create_element(acronym.shortname, acronym.key, insert_links)
-        if type(elem) == "table" then return elem else return {elem} end
+        return create_element(acronym.shortname, acronym.key, insert_links)
     end
 end
 

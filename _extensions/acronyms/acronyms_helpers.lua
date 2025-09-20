@@ -268,22 +268,22 @@ function Helpers.ensure_inlines(obj)
 end
 
 
--- Create a rich element preserving inline structures; returns Link or inlines/Str.
+-- Create a rich element preserving inline structures; returns a table of inlines.
 function Helpers.create_rich_element(content, key, insert_links)
     if pandoc.utils.type and pandoc.utils.type(content) == "Inline" then
         -- content is already a single inline, use it directly
         if insert_links then
-            return pandoc.Link({content}, Helpers.key_to_link(key))
+            return { pandoc.Link({content}, Helpers.key_to_link(key)) }
         else
-            return content
+            return {content}
         end
     else
         -- otherwise, ensure it's inlines
         local inlines = Helpers.ensure_inlines(content)
         if insert_links then
-            return pandoc.Link(inlines, Helpers.key_to_link(key))
+            return { pandoc.Link(inlines, Helpers.key_to_link(key)) }
         else
-            if #inlines == 1 then return inlines[1] else return inlines end
+            return inlines
         end
     end
 end
