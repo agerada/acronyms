@@ -269,6 +269,7 @@ end
 
 
 -- Create a rich element preserving inline structures; returns a table of inlines.
+-- Use this function to add links to acronym occurrences.
 function Helpers.create_rich_element(content, key, insert_links)
     if pandoc.utils.type and pandoc.utils.type(content) == "Inline" then
         -- content is already a single inline, use it directly
@@ -285,6 +286,23 @@ function Helpers.create_rich_element(content, key, insert_links)
         else
             return inlines
         end
+    end
+end
+
+
+-- Helper to join two inline arrays as: <front> (<back>)
+function Helpers.make_parenthesized(front_elems, back_elems, insert_links, key)
+    front_elems = Helpers.ensure_inlines(front_elems)
+    back_elems = Helpers.ensure_inlines(back_elems)
+    local all = {}
+    for _, v in ipairs(front_elems) do table.insert(all, v) end
+        table.insert(all, pandoc.Str(" ("))
+    for _, v in ipairs(back_elems) do table.insert(all, v) end
+        table.insert(all, pandoc.Str(")"))
+    if insert_links then
+        return { pandoc.Link(all, Helpers.key_to_link(key)) }
+    else
+        return all
     end
 end
 

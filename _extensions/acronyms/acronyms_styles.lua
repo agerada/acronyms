@@ -44,22 +44,7 @@ local styles = {}
 -- Kept as a local reference here to keep compatibility with previous versions.
 create_element = Helpers.create_rich_element
 
-
--- Helper to join two inline arrays as: <front> (<back>)
-local function make_parenthesized(front_elems, back_elems, insert_links, key)
-    front_elems = Helpers.ensure_inlines(front_elems)
-    back_elems = Helpers.ensure_inlines(back_elems)
-    local all = {}
-    for _, v in ipairs(front_elems) do table.insert(all, v) end
-        table.insert(all, pandoc.Str(" ("))
-    for _, v in ipairs(back_elems) do table.insert(all, v) end
-        table.insert(all, pandoc.Str(")"))
-    if insert_links then
-        return { pandoc.Link(all, Helpers.key_to_link(key)) }
-    else
-        return all
-    end
-end
+make_parenthesized = Helpers.make_parenthesized
 
 -- First use: long name (short name)
 -- Next use: short name
