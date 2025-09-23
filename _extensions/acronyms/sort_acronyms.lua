@@ -12,6 +12,9 @@
 --]]
 
 
+local Helpers = require("acronyms_helpers")
+
+
 -- The table containing all the sorting strategies.
 local sorting_strategies = {}
 
@@ -20,7 +23,7 @@ local sorting_strategies = {}
 sorting_strategies["alphabetical"] = function(acronym1, acronym2)
     local a = acronym1.shortname
     local b = acronym2.shortname
-    if pandoc and pandoc.utils and pandoc.utils.type then
+    if Helpers.isAtLeastVersion({2, 17}) then
         if pandoc.utils.type(a) == "Inlines" then a = pandoc.utils.stringify(a) end
         if pandoc.utils.type(b) == "Inlines" then b = pandoc.utils.stringify(b) end
     end
@@ -32,7 +35,7 @@ end
 sorting_strategies["alphabetical-case-insensitive"] = function(acronym1, acronym2)
     local a = acronym1.shortname
     local b = acronym2.shortname
-    if pandoc and pandoc.utils and pandoc.utils.type then
+    if Helpers.isAtLeastVersion({2, 17}) then
         if pandoc.utils.type(a) == "Inlines" then a = pandoc.utils.stringify(a) end
         if pandoc.utils.type(b) == "Inlines" then b = pandoc.utils.stringify(b) end
     end

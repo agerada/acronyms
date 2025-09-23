@@ -124,7 +124,7 @@ function Helpers.contains_markdown(value)
     if value == nil then return false end
 
     -- If we have a Pandoc type, check AST nodes directly
-    if pandoc and pandoc.utils and pandoc.utils.type then
+    if Helpers.isAtLeastVersion({2, 17}) then
         local typ = pandoc.utils.type(value)
         if typ == "Inlines" or typ == "MetaInlines" or typ == "List" then
             local inlines = Helpers.ensure_inlines(value)
@@ -167,7 +167,7 @@ end
 -- If v is an Inlines object (or a plain Lua array of inline nodes), we
 -- stringify it using pandoc.utils.stringify; otherwise fallback to tostring.
 function Helpers.inlines_to_string(v)
-    if pandoc and pandoc.utils and pandoc.utils.type then
+    if Helpers.isAtLeastVersion({2, 17}) then
         local t = pandoc.utils.type(v)
         if t == "Inlines" then
             return pandoc.utils.stringify(v)
@@ -210,7 +210,7 @@ end
 function Helpers.extract_meta_field(field, parse_markdown)
     if field == nil then return nil end
     if parse_markdown then
-        local ptype = pandoc.utils.type and pandoc.utils.type(field)
+        local ptype = Helpers.isAtLeastVersion({2, 17}) and pandoc.utils.type(field)
         if ptype == "Inlines" then
             return field
         elseif type(field) == "table" and field.t == "MetaInlines" then
@@ -237,7 +237,7 @@ end
 -- Normalize value into an array of Pandoc inlines.
 function Helpers.ensure_inlines(obj)
     if type(obj) == "string" then return { pandoc.Str(obj) } end
-    if pandoc and pandoc.utils and pandoc.utils.type then
+    if Helpers.isAtLeastVersion({2, 17}) then
         local t = pandoc.utils.type(obj)
         if t == "Inlines" then
             local arr = {}
@@ -271,7 +271,7 @@ end
 -- Create a rich element preserving inline structures; returns a table of inlines.
 -- Use this function to add links to acronym occurrences.
 function Helpers.create_rich_element(content, key, insert_links)
-    if pandoc.utils.type and pandoc.utils.type(content) == "Inline" then
+    if Helpers.isAtLeastVersion({2, 17}) and pandoc.utils.type(content) == "Inline" then
         -- content is already a single inline, use it directly
         if insert_links then
             return { pandoc.Link({content}, Helpers.key_to_link(key)) }
@@ -331,7 +331,7 @@ function Helpers.transform_case(value, case_kind)
 
     -- If it's not a plain inline array, check for Pandoc Inlines/List
     if not Helpers.is_inline_array(value) then
-        if pandoc.utils and pandoc.utils.type then
+        if Helpers.isAtLeastVersion({2, 17}) then
             local t = pandoc.utils.type(value)
             if t ~= "Inlines" and t ~= "List" then
                 return value
