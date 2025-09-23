@@ -69,7 +69,8 @@ function Acronym:new(object)
     -- Enforce explicit key when markdown parsing for shortname is enabled.
     if Helpers.contains_markdown(object.shortname) then
         if object.key == nil then
-            quarto.log.error("[acronyms] Each acronym must provide an explicit `key` when using markdown in shortname.")
+            quarto.log.error("[acronyms] Each acronym must provide an explicit `key` when using markdown in shortname: '" ..
+                Helpers.inlines_to_string(object.shortname) .. "'.")
             assert(false)
         end
     else
