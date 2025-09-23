@@ -239,15 +239,13 @@ function Acronyms:parseFromMetadata(metadata, on_duplicate)
     end
 
     -- Iterate over the defined acronyms. We use `ipairs` since we want to
-    -- keep their original order (useful for the `definition_order`!).
+    -- keep their original order (useful for the `definition_order`).
     for _, v in ipairs(metadata.acronyms.keys) do
-        -- Remember that each of these values can be nil!
-        -- By using `and`, we make sure that `stringify` is applied on non-nil.
         local key = v.key and pandoc.utils.stringify(v.key)
         -- Always parse markdown for names
         local shortname = Helpers.extract_meta_field(v.shortname, true)
         local longname  = Helpers.extract_meta_field(v.longname,  true)
-    -- raw longname parsed
+
         local shortname_plural
         local longname_plural
         if v.plural then
