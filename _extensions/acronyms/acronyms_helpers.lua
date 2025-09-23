@@ -123,28 +123,27 @@ end
 function Helpers.contains_markdown(value)
     if value == nil then return false end
 
-    -- If we have a Pandoc type, check AST nodes directly
+    local function has_markdown_formatting(inlines)
+        for _, il in ipairs(inlines) do
+            if il.t ~= "Str" and il.t ~= "Space" and il.t ~= "SoftBreak" and il.t ~= "LineBreak" then
+                return true
+            end
+        end
+        return false
+    end
+
     if Helpers.isAtLeastVersion({2, 17}) then
         local typ = pandoc.utils.type(value)
         if typ == "Inlines" or typ == "MetaInlines" or typ == "List" then
             local inlines = Helpers.ensure_inlines(value)
-            for _, il in ipairs(inlines) do
-                if il.t ~= "Str" and il.t ~= "Space" and il.t ~= "SoftBreak" and il.t ~= "LineBreak" then
-                    return true
-                end
-            end
-            return false
+            return has_markdown_formatting(inlines)
         end
     end
 
     -- If it's a plain Lua array of inline-like nodes, inspect element types
     if type(value) == "table" then
-        for _, v in ipairs(value) do
-            if type(v) == "table" and v.t ~= nil then
-                if v.t ~= "Str" and v.t ~= "Space" and v.t ~= "SoftBreak" and v.t ~= "LineBreak" then
-                    return true
-                end
-            end
+        if Helpers.is_inline_array(value) then
+            return has_markdown_formatting(value)
         end
     end
 
@@ -154,8 +153,8 @@ function Helpers.contains_markdown(value)
        or s:find("%*.-%*")    -- *emph*
        or s:find("_.-_")      -- _emph_
        or s:find("`")         -- inline code
-       or s:find("%[.-%]%(")  -- [text](link)
-       or s:find("!%[.-%]%(") -- image
+       or s:find("!?%[.-%]%(") -- [text](link) or ![text](image)
+       or s:find("~~.-~~")    -- ~~strikethrough~~
        then
         return true
     end
