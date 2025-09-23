@@ -104,6 +104,35 @@ Notice how by using `\acrs` we can pluralize the acronym; you can read more
 about that in [Plural form](articles/plural.qmd).
 
 
+## Using markdown in acronyms
+
+You can use basic markdown formatting in the `longname` and `shortname`
+fields of your acronym definitions. For example, you can add **bold**,
+*italic*, ~subscript~, and ^superscript^.
+
+There are a few things to keep in mind when using markdown in acronyms.
+It is generally best two wrap short and long names in quotes, otherwise
+issues with yaml parsing will be encountered. Also, a `key` must be
+provided if markdown is used in the short name (this is not required
+if markdown is limited to long name). Finally, a plural form must be
+explicitly provided when using markdown. An example of a yaml that
+uses markdown follows:
+
+```yaml
+---
+acronyms:
+  keys:
+    - shortname: CDI
+      longname: "*Clostridium difficile* infection
+      plural:
+        shortname: CDIs
+        longname: "*Clostridium difficile* infections"
+    - key: ecoli
+      shortname: "*E. coli*"
+      longname: "*Escherichia coli*"
+---
+```
+
 ## Complete example
 
 A complete example showing the previous instructions as a single file can
