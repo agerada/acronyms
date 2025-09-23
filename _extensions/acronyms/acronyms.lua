@@ -79,12 +79,8 @@ function Acronym:new(object)
     end
 
     -- Track whether the user explicitly provided plural forms before we add defaults.
-    local explicit_plural_short = false
-    local explicit_plural_long  = false
-    if object.plural then
-        if object.plural.shortname ~= nil then explicit_plural_short = true end
-        if object.plural.longname  ~= nil then explicit_plural_long  = true end
-    end
+    local explicit_plural_short = object.plural and object.plural.shortname ~= nil
+    local explicit_plural_long  = object.plural and object.plural.longname ~= nil
 
     -- If the plural table itself is missing, create it so downstream code works.
     if not object.plural then
