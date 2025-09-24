@@ -112,6 +112,31 @@ function AcronymsPandoc.replaceExistingAcronym(
     if insert_links == nil then insert_links = Options["insert_links"] end
     case_target = case_target or "long"
 
+    -- If plural is requested, enforce strictness when markdown is present
+    -- in any part of the acronym unless an explicit plural was provided
+    if plural then
+        local need_long_strict = Helpers.contains_markdown(acronym.longname)
+            and not acronym._explicit_plural_longname
+        local need_short_strict = Helpers.contains_markdown(acronym.shortname)
+            and not acronym._explicit_plural_shortname
+        if need_long_strict then
+            quarto.log.error(
+                "[acronyms] Plural form requested for '" .. tostring(acr_key) ..
+                "' but 'plural.longname' was not explicitly provided while markdown parsing is enabled for its longname. " ..
+                "Define it under plural: { longname: ... } to use \\acrs{" .. tostring(acr_key) .. "} ."
+            )
+            assert(false)
+        end
+        if need_short_strict then
+            quarto.log.error(
+                "[acronyms] Plural form requested for '" .. tostring(acr_key) ..
+                "' but 'plural.shortname' was not explicitly provided while markdown parsing is enabled for its shortname. " ..
+                "Define it under plural: { shortname: ... } to use \\acrs{" .. tostring(acr_key) .. "} ."
+            )
+            assert(false)
+        end
+    end
+
     -- Replace the acronym with the desired style
     return replaceExistingAcronymWithStyle(
         acronym,
