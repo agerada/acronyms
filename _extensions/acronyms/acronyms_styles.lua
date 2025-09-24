@@ -235,15 +235,11 @@ return function(acronym, style_name, insert_links, is_first_use, plural,
     end
 
     -- Delegate case transformation to Helpers.transform_case which preserves inline formatting
-    local function transform_case(value, case_kind)
-        return Helpers.transform_case(value, case_kind)
-    end
-
     if case_target == "short" or case_target == "both" then
-        acronym.shortname = transform_case(acronym.shortname, case)
+        acronym.shortname = Helpers.transform_case(acronym.shortname, case)
     end
     if case_target == "long" or case_target == "both" then
-        acronym.longname = transform_case(acronym.longname, case)
+        acronym.longname = Helpers.transform_case(acronym.longname, case)
     end
 
     local rendered = styles[style_name](acronym, insert_links, is_first_use, case_target)
