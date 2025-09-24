@@ -137,9 +137,8 @@ function AcronymsPandoc.generateDefinitionList(sorted_acronyms)
             acronym.shortname,
             pandoc.Attr(Helpers.key_to_id(acronym.key), {}, {})
         )
-        local long_inlines = Helpers.ensure_inlines(acronym.longname)
-        local longname_val = pandoc.Plain(long_inlines)
-        table.insert(definition_list, { name, longname_val })
+        local definition_value = pandoc.Plain(Helpers.ensure_inlines(acronym.longname))
+        table.insert(definition_list, { name, definition_value })
     end
     return pandoc.DefinitionList(definition_list)
 end
