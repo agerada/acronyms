@@ -133,10 +133,12 @@ end
 function AcronymsPandoc.generateDefinitionList(sorted_acronyms)
     local definition_list = {}
     for _, acronym in ipairs(sorted_acronyms) do
+        -- The definition's name. A Span with an ID so we can create a link.
         local name = pandoc.Span(
             acronym.shortname,
             pandoc.Attr(Helpers.key_to_id(acronym.key), {}, {})
         )
+        -- The definition's value.
         local definition_value = pandoc.Plain(Helpers.ensure_inlines(acronym.longname))
         table.insert(definition_list, { name, definition_value })
     end
